@@ -545,7 +545,7 @@ export class SoundsService {
       const cat = await this.prisma.category.findUnique({
         where: { slug: dto.categorySlug },
       });
-      if (!cat) throw new BadRequestException(`Kategori '${dto.categorySlug}' not found`);
+      if (!cat) throw new BadRequestException(`Category '${dto.categorySlug}' not found`);
       categoryId = cat.id;
     }
     if (!categoryId) throw new BadRequestException('categoryId or categorySlug is required');
@@ -558,7 +558,7 @@ export class SoundsService {
     const soundId = uuidv4();
 
     // Read file from disk (diskStorage) or memory (memoryStorage fallback)
-    if (!file.buffer && !file.path) throw new BadRequestException('File audio tidak tersedia');
+    if (!file.buffer && !file.path) throw new BadRequestException('Audio file not available');
     const fileBuffer: Buffer = file.buffer ?? fs.readFileSync(file.path!);
 
     // Proses audio
@@ -583,7 +583,7 @@ export class SoundsService {
       waveformData = waveform;
     } catch (err: any) {
       this.logger.warn(
-        `FFmpeg tidak tersedia — preview pakai file asli, waveform pakai fallback. Error: ${err?.message}`,
+        `FFmpeg not available — using original file as preview, fallback waveform. Error: ${err?.message}`,
       );
     }
 
@@ -603,7 +603,7 @@ export class SoundsService {
       data: {
         id: soundId,
         category: { connect: { id: categoryId! } },
-        ...(uploader.role !== 'ADMIN' ? { author: { connect: { id: uploaderId } } } : {}),
+        author: { connect: { id: uploaderId } },
         title: dto.title,
         slug,
         description: dto.description ?? null,
@@ -858,13 +858,13 @@ export class SoundsService {
 
     if (dto.categorySlug !== undefined) {
       const cat = await this.prisma.category.findUnique({ where: { slug: dto.categorySlug } });
-      if (!cat) throw new BadRequestException('Kategori not found');
+      if (!cat) throw new BadRequestException('Category not found');
       updateData.categoryId = cat.id;
     }
 
-    // Non-admin: reset to pending review only when price or accessLevel actually changed
-    if (!isAdmin && (priceChanged || accessLevelChanged)) {
-      updateData.reviewStatus = 'PENDING';
+    // Non-admin: any edit to an approved sound requires re-review before going live
+    if (!isAdmin && sound.reviewStatus === 'APPROVED') {
+      updateData.reviewStatus = 'NEEDS_RE_REVIEW';
       updateData.isPublished = false;
     }
 

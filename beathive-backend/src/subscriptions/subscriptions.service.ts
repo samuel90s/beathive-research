@@ -76,7 +76,7 @@ export class SubscriptionsService {
     if (!plan) throw new NotFoundException('Plan not found');
 
     if (plan.slug === 'free') {
-      throw new BadRequestException('Tidak bisa upgrade ke free plan');
+      throw new BadRequestException('Cannot upgrade to a free plan');
     }
 
     const basePrice =
@@ -214,7 +214,7 @@ export class SubscriptionsService {
 
     const isPaid = midtransStatus === 'settlement' || midtransStatus === 'capture';
     if (!isPaid) {
-      throw new BadRequestException(`Pembayaran belum selesai (status: ${midtransStatus})`);
+      throw new BadRequestException(`Payment not yet complete (status: ${midtransStatus})`);
     }
 
     // Aktifkan subscription

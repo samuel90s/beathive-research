@@ -70,7 +70,7 @@ export class AdminController {
     @CurrentUser() userId: string,
     @Body() body: RejectSoundDto,
   ) {
-    return this.adminService.rejectSound(id, userId, body.reason || 'Tidak memenuhi standar');
+    return this.adminService.rejectSound(id, userId, body.reason || 'Does not meet quality standards');
   }
 
   // GET /admin/users?search=&page=1&limit=20

@@ -33,7 +33,7 @@ export class SubscriptionGuard implements CanActivate {
     });
 
     if (!subscription || subscription.status !== 'ACTIVE') {
-      throw new ForbiddenException('Butuh subscription aktif');
+      throw new ForbiddenException('An active subscription is required');
     }
 
     // Cek level plan jika diperlukan

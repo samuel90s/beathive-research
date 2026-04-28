@@ -31,9 +31,17 @@ interface Sound {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING:  'bg-amber-500/10 text-amber-400 border border-amber-500/30',
-  APPROVED: 'bg-teal-500/10 text-teal-400 border border-teal-500/30',
-  REJECTED: 'bg-red-500/10 text-red-400 border border-red-500/30',
+  PENDING:         'bg-amber-500/10 text-amber-400 border border-amber-500/30',
+  APPROVED:        'bg-teal-500/10 text-teal-400 border border-teal-500/30',
+  REJECTED:        'bg-red-500/10 text-red-400 border border-red-500/30',
+  NEEDS_RE_REVIEW: 'bg-orange-500/10 text-orange-400 border border-orange-500/30',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING:         'Pending',
+  APPROVED:        'Approved',
+  REJECTED:        'Rejected',
+  NEEDS_RE_REVIEW: 'Needs Re-review',
 };
 
 const ACCESS_COLORS: Record<string, string> = {
@@ -179,7 +187,7 @@ function DetailPanel({
         {/* Status badges */}
         <div className="flex flex-wrap gap-2">
           <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS[sound.reviewStatus]}`}>
-            {sound.reviewStatus}
+            {STATUS_LABELS[sound.reviewStatus] ?? sound.reviewStatus}
           </span>
           <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${ACCESS_COLORS[sound.accessLevel]}`}>
             {sound.accessLevel}
@@ -361,7 +369,7 @@ function DetailPanel({
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────
-const STATUS_TABS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const;
+const STATUS_TABS = ['ALL', 'PENDING', 'NEEDS_RE_REVIEW', 'APPROVED', 'REJECTED'] as const;
 
 export default function AdminSoundsPage() {
   const { accessToken } = useAuthStore();
@@ -456,7 +464,7 @@ export default function AdminSoundsPage() {
                 tab === t ? 'bg-surface text-white shadow-sm' : 'text-[#6b6f82] hover:text-[#c4c6d8]'
               }`}
             >
-              {t === 'ALL' ? 'All' : t.charAt(0) + t.slice(1).toLowerCase()}
+              {t === 'ALL' ? 'All' : STATUS_LABELS[t] ?? t}
             </button>
           ))}
         </div>
@@ -495,7 +503,7 @@ export default function AdminSoundsPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium text-white truncate">{s.title}</p>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${STATUS_COLORS[s.reviewStatus]}`}>
-                        {s.reviewStatus}
+                        {STATUS_LABELS[s.reviewStatus] ?? s.reviewStatus}
                       </span>
                     </div>
                     <p className="text-xs text-[#6b6f82] mt-0.5 truncate">
@@ -505,7 +513,7 @@ export default function AdminSoundsPage() {
                     <p className="text-[10px] text-[#5a5d72] mt-0.5">{formatDate(s.createdAt)}</p>
                   </div>
                   {/* Quick actions inline only if panel closed */}
-                  {!panelOpen && s.reviewStatus === 'PENDING' && (
+                  {!panelOpen && (s.reviewStatus === 'PENDING' || s.reviewStatus === 'NEEDS_RE_REVIEW') && (
                     <div className="flex gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
                       <button
                         onClick={() => approve(s.id)}

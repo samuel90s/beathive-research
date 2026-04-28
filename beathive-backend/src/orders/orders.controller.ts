@@ -127,7 +127,7 @@ export class OrdersController {
   @HttpCode(HttpStatus.OK)
   async devSimulatePayment(@Body() body: { orderId: string }) {
     if (this.config.get('NODE_ENV') === 'production') {
-      throw new ForbiddenException('Endpoint ini tidak tersedia di production');
+      throw new ForbiddenException('This endpoint is not available in production');
     }
     return this.webhookService.devSimulatePayment(body.orderId);
   }

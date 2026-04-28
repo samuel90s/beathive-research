@@ -44,7 +44,7 @@ export class RolesGuard implements CanActivate {
 
     if (!requiredRoles.includes(user.role)) {
       throw new ForbiddenException(
-        'Hanya admin yang bisa mengakses endpoint ini',
+        'Only admins can access this endpoint',
       );
     }
 

@@ -80,12 +80,12 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('Email atau password salah');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) {
-      throw new UnauthorizedException('Email atau password salah');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     // If 2FA is enabled, require TOTP token

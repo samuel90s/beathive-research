@@ -19,7 +19,7 @@ export class AdminService {
       await Promise.all([
         this.prisma.user.count(),
         this.prisma.soundEffect.count(),
-        this.prisma.soundEffect.count({ where: { reviewStatus: 'PENDING' } }),
+        this.prisma.soundEffect.count({ where: { reviewStatus: { in: ['PENDING', 'NEEDS_RE_REVIEW'] } } }),
         this.prisma.order.count({ where: { status: 'PAID' } }),
         this.prisma.subscription.count({
           where: { status: 'ACTIVE', plan: { slug: { not: 'free' } } },

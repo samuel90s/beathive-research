@@ -18,7 +18,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: false, // longgar agar form-data tambahan field tidak error
+      forbidNonWhitelisted: false, // must stay false: multipart form-data sends extra fields that would fail strict validation
       transform: true,             // auto-transform ke tipe yang benar (Number, Boolean, dll)
     }),
   );

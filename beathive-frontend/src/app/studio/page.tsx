@@ -386,8 +386,21 @@ export default function StudioPage() {
           {sounds.map((sound) => {
             const reviewStatus = sound.reviewStatus || 'PENDING';
             const isRejected = reviewStatus === 'REJECTED';
-            const statusCls = reviewStatus === 'APPROVED' ? 'bg-teal/10 text-teal border-teal/20' : isRejected ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-            const statusLabel = reviewStatus === 'APPROVED' ? 'Live' : isRejected ? 'Rejected' : 'Pending Review';
+            const isNeedsReReview = reviewStatus === 'NEEDS_RE_REVIEW';
+            const statusCls = reviewStatus === 'APPROVED'
+              ? 'bg-teal/10 text-teal border-teal/20'
+              : isRejected
+              ? 'bg-red-500/10 text-red-400 border-red-500/20'
+              : isNeedsReReview
+              ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+              : 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+            const statusLabel = reviewStatus === 'APPROVED'
+              ? 'Live'
+              : isRejected
+              ? 'Rejected'
+              : isNeedsReReview
+              ? 'Needs Re-review'
+              : 'Pending Review';
             return (
               <div key={sound.id} className={`card rounded-xl px-4 py-3 ${isRejected ? 'border-red-500/20' : ''}`}>
                 <div className="flex items-center gap-3">

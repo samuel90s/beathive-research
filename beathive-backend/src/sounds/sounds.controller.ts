@@ -151,7 +151,7 @@ export class SoundsController {
     // Local file
     const filePath = this.soundsService.getLocalPreviewPath(info.previewUrl ?? '');
     if (!filePath) {
-      return res.status(HttpStatus.NOT_FOUND).json({ message: 'File preview tidak tersedia' });
+      return res.status(HttpStatus.NOT_FOUND).json({ message: 'Preview file not available' });
     }
 
     const stat = fs.statSync(filePath);
@@ -221,7 +221,7 @@ export class SoundsController {
 
     // Subscription downloads diblokir kalau sound sudah unpublished; purchase tetap boleh
     if (!sound.isPublished && lastDownload.source === 'subscription') {
-      throw new ForbiddenException('Sound ini sudah tidak tersedia untuk diunduh.');
+      throw new ForbiddenException('This sound is no longer available for download.');
     }
 
     // Untuk subscription downloads, re-verify bahwa subscription masih aktif
@@ -231,7 +231,7 @@ export class SoundsController {
         include: { plan: true },
       });
       if (!subscription || subscription.status !== 'ACTIVE' || subscription.currentPeriodEnd < new Date()) {
-        throw new ForbiddenException('Subscription kamu sudah tidak aktif. Perbarui plan untuk download ulang.');
+        throw new ForbiddenException('Your subscription is no longer active. Renew your plan to download again.');
       }
     }
 

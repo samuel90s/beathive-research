@@ -77,7 +77,7 @@ export interface SoundEffect {
   isLiked?: boolean;
   isPurchased?: boolean;
   isPublished?: boolean;
-  reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'NEEDS_RE_REVIEW';
   reviewNote?: string;
   accessLevel: 'FREE' | 'PRO' | 'BUSINESS' | 'PURCHASE';
   licenseType: string;

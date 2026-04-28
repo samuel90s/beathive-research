@@ -296,7 +296,7 @@ export class EarningsService {
       totalEarned: wallet.totalEarned,
       earnings: wallet.earnings.map(e => ({
         id: e.id,
-        soundTitle: soundMap[e.soundId] ?? 'Sound tidak diketahui',
+        soundTitle: soundMap[e.soundId] ?? 'Unknown sound',
         amountRp: e.amountRp,
         earnedAt: e.earnedAt,
       })),

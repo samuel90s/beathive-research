@@ -57,7 +57,7 @@ export class WebhookService {
 
     if (!isValid) {
       this.logger.warn(`Webhook signature tidak valid untuk order ${order_id}`);
-      throw new BadRequestException('Signature tidak valid');
+      throw new BadRequestException('Invalid webhook signature');
     }
 
     // 2. Cek status transaksi
