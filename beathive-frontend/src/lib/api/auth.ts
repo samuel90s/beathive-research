@@ -3,8 +3,8 @@ import { apiClient } from './client';
 import type { User, AuthTokens } from '@/types';
 
 export const authApi = {
-  register: async (name: string, email: string, password: string, role?: string) => {
-    const { data } = await apiClient.post('/auth/register', { name, email, password, role });
+  register: async (name: string, email: string, password: string) => {
+    const { data } = await apiClient.post('/auth/register', { name, email, password });
     return data as { user: User } & AuthTokens;
   },
 

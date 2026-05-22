@@ -16,7 +16,7 @@ const midtransClient = require('midtrans-client');
 export interface CreateOrderDto {
   items: {
     soundEffectId: string;
-    licenseType: 'personal' | 'commercial';
+    licenseType: 'personal' | 'commercial' | 'sync' | 'broadcast';
   }[];
 }
 

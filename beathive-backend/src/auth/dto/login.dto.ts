@@ -1,5 +1,5 @@
 // src/auth/dto/login.dto.ts
-import { IsEmail, IsString } from 'class-validator';
+import { IsEmail, IsString, IsOptional } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -7,6 +7,10 @@ export class LoginDto {
 
   @IsString()
   password: string;
+
+  @IsOptional()
+  @IsString()
+  totpToken?: string;
 }
 
 // src/auth/dto/refresh-token.dto.ts

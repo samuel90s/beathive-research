@@ -6,11 +6,12 @@ import * as nodemailer from 'nodemailer';
 export class EmailService {
   private transporter: nodemailer.Transporter;
   private readonly logger = new Logger(EmailService.name);
+  private readonly emailFrom: string;
 
   constructor(private config: ConfigService) {
     const mailgunKey = this.config.get<string>('MAILGUN_API_KEY');
     const mailgunDomain = this.config.get<string>('MAILGUN_DOMAIN');
-    const emailFrom = this.config.get<string>('EMAIL_FROM');
+    this.emailFrom = this.config.get<string>('EMAIL_FROM', 'noreply@beathive.com');
 
     // Mailgun SMTP configuration
     this.transporter = nodemailer.createTransport({
@@ -30,6 +31,7 @@ export class EmailService {
     try {
       const html = this.getPasswordResetTemplate(resetUrl, userName);
       await this.transporter.sendMail({
+        from: this.emailFrom,
         to: email,
         subject: 'Reset Your BeatHive Password',
         html,
@@ -45,6 +47,7 @@ export class EmailService {
     try {
       const html = this.getWithdrawalApprovedTemplate(amount, bankDetails, userName);
       await this.transporter.sendMail({
+        from: this.emailFrom,
         to: email,
         subject: 'Your Withdrawal Has Been Approved',
         html,
@@ -60,6 +63,7 @@ export class EmailService {
     try {
       const html = this.getWithdrawalRejectedTemplate(amount, reason, userName);
       await this.transporter.sendMail({
+        from: this.emailFrom,
         to: email,
         subject: 'Your Withdrawal Request Was Rejected',
         html,
@@ -75,6 +79,7 @@ export class EmailService {
     try {
       const html = this.getPaymentConfirmedTemplate(orderId, totalAmount, userName);
       await this.transporter.sendMail({
+        from: this.emailFrom,
         to: email,
         subject: 'Payment Confirmed - Your Order',
         html,
@@ -91,6 +96,7 @@ export class EmailService {
       const html = this.getSoundReviewTemplate(soundTitle, status, reviewNote, userName);
       const subject = status === 'APPROVED' ? `Your Sound "${soundTitle}" Was Approved` : `Your Sound "${soundTitle}" Was Rejected`;
       await this.transporter.sendMail({
+        from: this.emailFrom,
         to: email,
         subject,
         html,
@@ -127,7 +133,7 @@ export class EmailService {
           </div>
         </body></html>
       `;
-      await this.transporter.sendMail({ to: email, subject: 'Withdrawal Request Submitted', html });
+      await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: 'Withdrawal Request Submitted', html });
       this.logger.log(`Withdrawal requested email sent to ${email}`);
     } catch (err) {
       this.logger.error(`Failed to send withdrawal requested email to ${email}: ${err.message}`);
@@ -144,7 +150,7 @@ export class EmailService {
       <a href="${process.env.FRONTEND_URL}/pricing" style="background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Perpanjang Sekarang</a>
       <p style="color:#999;font-size:12px;margin-top:24px">BeatHive &copy; 2026</p>
     </body></html>`;
-    await this.transporter.sendMail({ to: email, subject: `Subscription ${planName} berakhir dalam 7 hari`, html }).catch(e => this.logger.error(e.message));
+    await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: `Subscription ${planName} berakhir dalam 7 hari`, html }).catch(e => this.logger.error(e.message));
   }
 
   async sendQuotaLow(email: string, userName: string, remaining: number, limit: number) {
@@ -156,7 +162,7 @@ export class EmailService {
       <a href="${process.env.FRONTEND_URL}/pricing" style="background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Lihat Plan</a>
       <p style="color:#999;font-size:12px;margin-top:24px">BeatHive &copy; 2026</p>
     </body></html>`;
-    await this.transporter.sendMail({ to: email, subject: `Sisa ${remaining} download bulan ini`, html }).catch(e => this.logger.error(e.message));
+    await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: `Sisa ${remaining} download bulan ini`, html }).catch(e => this.logger.error(e.message));
   }
 
   async sendSoundSold(creatorEmail: string, creatorName: string, soundTitle: string, amount: number, licenseType: string) {
@@ -168,7 +174,7 @@ export class EmailService {
       <a href="${process.env.FRONTEND_URL}/dashboard/earnings" style="background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Lihat Earnings</a>
       <p style="color:#999;font-size:12px;margin-top:24px">BeatHive &copy; 2026</p>
     </body></html>`;
-    await this.transporter.sendMail({ to: creatorEmail, subject: `Sound terjual: "${soundTitle}"`, html }).catch(e => this.logger.error(e.message));
+    await this.transporter.sendMail({ from: this.emailFrom, to: creatorEmail, subject: `Sound terjual: "${soundTitle}"`, html }).catch(e => this.logger.error(e.message));
   }
 
   async sendEmailVerification(email: string, userName: string, verifyUrl: string) {
@@ -180,7 +186,7 @@ export class EmailService {
       <p style="color:#999;font-size:12px">Link berlaku 24 jam. Jika tidak mendaftar, abaikan email ini.</p>
       <p style="color:#999;font-size:12px;margin-top:24px">BeatHive &copy; 2026</p>
     </body></html>`;
-    await this.transporter.sendMail({ to: email, subject: 'Verifikasi Email BeatHive', html }).catch(e => this.logger.error(e.message));
+    await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: 'Verifikasi Email BeatHive', html }).catch(e => this.logger.error(e.message));
   }
 
   // HTML Templates

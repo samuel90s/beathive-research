@@ -104,7 +104,7 @@ export class EarningsService {
               soundId,
               downloadId: earningKey,
               amountRp,
-              poolPercent: sound.accessLevel === 'PURCHASE' ? CREATOR_PURCHASE_PERCENT : CREATOR_POOL_PERCENT,
+              poolPercent: (sound.accessLevel as any) === 'PURCHASE' ? CREATOR_PURCHASE_PERCENT : CREATOR_POOL_PERCENT,
             },
           }),
           this.prisma.creatorWallet.update({

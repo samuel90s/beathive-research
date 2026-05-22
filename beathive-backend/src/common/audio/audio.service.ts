@@ -1,6 +1,7 @@
 // src/common/audio/audio.service.ts
 import { Injectable, Logger } from '@nestjs/common';
-import * as ffmpeg from 'fluent-ffmpeg';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const ffmpeg = require('fluent-ffmpeg');
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';

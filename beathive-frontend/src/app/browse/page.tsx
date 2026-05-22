@@ -483,8 +483,8 @@ function SoundList({ category, filters, onBack }: {
 
   const activeFilters: SoundFilters = {
     ...filters,
-    sortBy: sort,
-    accessLevel: access || undefined,
+    sortBy: sort as SoundFilters['sortBy'],
+    accessLevel: (access || undefined) as SoundFilters['accessLevel'],
     search: debouncedSearch || (subcat ? subcat : undefined),
     page: 1,
     limit: 40,

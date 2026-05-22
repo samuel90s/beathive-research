@@ -2,11 +2,23 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
+import { apiClient } from '@/lib/api/client';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const verified = searchParams.get('verified');
+  const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
+
+  const handleResend = async () => {
+    setResendStatus('loading');
+    try {
+      await apiClient.post('/auth/resend-verification');
+      setResendStatus('sent');
+    } catch {
+      setResendStatus('error');
+    }
+  };
 
   if (verified === '1') {
     return (
@@ -42,8 +54,20 @@ function VerifyEmailContent() {
         </p>
         <p className="text-xs text-[#3a3c4e]">
           Tidak dapat email?{' '}
-          <button className="text-accent-bright hover:underline">Kirim ulang</button>
+          <button
+            onClick={handleResend}
+            disabled={resendStatus === 'loading' || resendStatus === 'sent'}
+            className="text-accent-bright hover:underline disabled:opacity-50"
+          >
+            Kirim ulang
+          </button>
         </p>
+        {resendStatus === 'sent' && (
+          <p className="text-xs text-teal-400 mt-2">Email verifikasi telah dikirim ulang.</p>
+        )}
+        {resendStatus === 'error' && (
+          <p className="text-xs text-red-400 mt-2">Gagal mengirim email. Coba lagi.</p>
+        )}
       </div>
     </div>
   );

@@ -384,7 +384,7 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
 
 interface CTAProps {
   sound: SoundEffect;
-  user: ReturnType<typeof useAuthStore>['user'];
+  user: import('@/types').User | null;
   inCart: boolean;
   isAuthenticated: boolean;
   downloading: string | null;

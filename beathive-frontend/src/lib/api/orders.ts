@@ -27,7 +27,12 @@ export const ordersApi = {
         licenseType: i.licenseType,
       })),
     });
-    return data as { orderId: string; totalAmount: number; snapToken: string };
+    return data as {
+      orderId: string;
+      totalAmount: number;
+      snapToken: string;
+      items: { title: string; price: number; licenseType: string }[];
+    };
   },
 
   verifyPayment: async (orderId: string) => {

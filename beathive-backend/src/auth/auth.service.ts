@@ -137,7 +137,7 @@ export class AuthService {
 
   // ─── Login dengan email ─────────────────────────────────
 
-  async login(dto: LoginDto & { totpToken?: string }) {
+  async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -395,7 +395,7 @@ export class AuthService {
 
   // ─── Password Reset ─────────────────────────────────────
 
-  async forgotPassword(email: string, emailService: any) {
+  async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
       // Don't reveal if email exists (security best practice)
@@ -414,7 +414,7 @@ export class AuthService {
     const resetUrl = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
 
     try {
-      await emailService.sendPasswordReset(email, resetUrl, user.name);
+      await this.email.sendPasswordReset(email, resetUrl, user.name);
     } catch (err) {
       // Log but don't throw (email sending is non-critical)
       console.error('Failed to send password reset email:', err);

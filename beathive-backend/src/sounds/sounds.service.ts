@@ -293,11 +293,14 @@ export class SoundsService {
       where.durationMs = { ...(where.durationMs ?? {}), lte: filters.maxDuration };
     }
 
-    if (filters.minPrice !== undefined) {
-      where.price = { ...(where.price && typeof where.price === 'object' ? where.price : {}), gte: filters.minPrice };
-    }
-    if (filters.maxPrice !== undefined) {
-      where.price = { ...(where.price && typeof where.price === 'object' ? where.price : {}), lte: filters.maxPrice };
+    // Only apply price range when isFree is NOT set
+    if (isFree === undefined) {
+      if (filters.minPrice !== undefined) {
+        where.price = { ...(typeof where.price === 'object' && where.price !== null ? where.price : {}), gte: filters.minPrice };
+      }
+      if (filters.maxPrice !== undefined) {
+        where.price = { ...(typeof where.price === 'object' && where.price !== null ? where.price : {}), lte: filters.maxPrice };
+      }
     }
 
     if (filters.tags) {
@@ -461,8 +464,13 @@ export class SoundsService {
       },
     });
 
+    // Declare at top scope so it's accessible outside the if block (needsQuotaCheck below)
+    // Using any here because Prisma generic syntax on method references is not valid TS
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let subscription: any = null;
+
     if (!alreadyPurchased) {
-      const subscription = await this.prisma.subscription.findUnique({
+      subscription = await this.prisma.subscription.findUnique({
         where: { userId },
         include: { plan: true },
       });

@@ -27,7 +27,7 @@ export default function RegisterPage() {
     if (form.password.length < 8) { setError('Password must be at least 8 characters'); return; }
     setLoading(true); setError(null);
     try {
-      await register(form.name, form.email, form.password, 'USER');
+      await register(form.name, form.email, form.password);
       router.push('/browse');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');
