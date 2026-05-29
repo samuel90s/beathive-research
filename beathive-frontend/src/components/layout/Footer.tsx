@@ -95,7 +95,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-rim pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-[#4a4d5e]">© {new Date().getFullYear()} BeatHive. All rights reserved.</p>
+          <p className="text-xs text-[#4a4d5e]">© {new Date().getFullYear()} Arsonus. All rights reserved.</p>
           <p className="text-xs text-[#4a4d5e]">Made with <span className="text-accent/60">♪</span> for creators.</p>
         </div>
       </div>

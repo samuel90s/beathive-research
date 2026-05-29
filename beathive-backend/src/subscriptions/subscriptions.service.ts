@@ -40,26 +40,26 @@ export class SubscriptionsService {
 
     if (!sub) throw new NotFoundException('Subscription not found');
 
-    // Hitung sisa kuota download bulan ini (UTC agar konsisten lintas timezone)
+    // Hitung sisa kuota download HARI ini (UTC)
     const now = new Date();
-    const thisMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-    const downloadsThisMonth = await this.prisma.download.count({
+    const downloadsToday = await this.prisma.download.count({
       where: {
         userId,
         source: 'subscription',
-        downloadedAt: { gte: thisMonth },
+        downloadedAt: { gte: todayStart },
       },
     });
 
     return {
       ...sub,
       usage: {
-        downloadsThisMonth,
+        downloadsThisMonth: downloadsToday,  // kept key for backward compat with frontend
         downloadLimit: sub.plan.downloadLimit,
         remaining: sub.plan.unlimited
           ? null
-          : Math.max(0, sub.plan.downloadLimit - downloadsThisMonth),
+          : Math.max(0, sub.plan.downloadLimit - downloadsToday),
         unlimited: sub.plan.unlimited,
       },
     };
@@ -70,7 +70,7 @@ export class SubscriptionsService {
   async upgradePlan(
     userId: string,
     planSlug: string,
-    billingCycle: 'monthly' | 'yearly',
+    billingCycle: 'monthly' | 'yearly' | '3months' | '6months' | '12months',
   ) {
     const plan = await this.prisma.plan.findUnique({ where: { slug: planSlug } });
     if (!plan) throw new NotFoundException('Plan not found');
@@ -79,8 +79,17 @@ export class SubscriptionsService {
       throw new BadRequestException('Cannot upgrade to a free plan');
     }
 
-    const basePrice =
-      billingCycle === 'yearly' ? plan.priceYearly : plan.priceMonthly;
+    // Map duration to price
+    const PRICE_MAP: Record<string, number> = {
+      'monthly':  plan.priceMonthly,
+      '1month':   plan.priceMonthly,
+      '3months':  Math.round(plan.priceMonthly * 3 * 0.87),  // ~13% hemat
+      '6months':  Math.round(plan.priceMonthly * 6 * 0.80),  // ~20% hemat
+      '12months': Math.round(plan.priceMonthly * 12 * 0.73), // ~27% hemat
+      'yearly':   plan.priceYearly || Math.round(plan.priceMonthly * 12 * 0.73),
+    };
+
+    const basePrice = PRICE_MAP[billingCycle] ?? plan.priceMonthly;
 
     const SERVICE_FEE_PERCENT = 5;
     const TAX_PERCENT = 11;
@@ -145,7 +154,7 @@ export class SubscriptionsService {
   async activateSubscription(
     userId: string,
     planSlug: string,
-    billingCycle: 'monthly' | 'yearly',
+    billingCycle: 'monthly' | 'yearly' | '1month' | '3months' | '6months' | '12months',
     gatewaySubId: string,
   ) {
     const plan = await this.prisma.plan.findUnique({ where: { slug: planSlug } });
@@ -153,11 +162,18 @@ export class SubscriptionsService {
 
     const now = new Date();
     const periodEnd = new Date(now);
-    if (billingCycle === 'yearly') {
-      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    } else {
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
-    }
+
+    // Map billing cycle to months
+    const MONTHS_MAP: Record<string, number> = {
+      'monthly':  1,
+      '1month':   1,
+      '3months':  3,
+      '6months':  6,
+      '12months': 12,
+      'yearly':   12,
+    };
+    const months = MONTHS_MAP[billingCycle] ?? 1;
+    periodEnd.setMonth(periodEnd.getMonth() + months);
 
     await this.prisma.subscription.upsert({
       where: { userId },

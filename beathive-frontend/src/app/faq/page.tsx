@@ -4,15 +4,15 @@ import Link from 'next/link';
 
 const faqs = [
   { category: 'General', items: [
-    { q: 'What is BeatHive?', a: 'BeatHive is a premium sound effects marketplace. You can browse, preview, and download high-quality SFX for your videos, games, podcasts, and creative projects.' },
-    { q: 'Do I need an account to download sounds?', a: 'Yes. You need a free account to download sounds. Free-tier sounds are available to all registered users, while Pro and Business sounds require an active subscription or per-item purchase.' },
+    { q: 'What is Arsonus?', a: 'Arsonus is a premium sound effects marketplace. You can browse, preview, and download high-quality SFX for your videos, games, podcasts, and creative projects.' },
+    { q: 'Do I need an account to download sounds?', a: 'Yes. You need a free account to download sounds. Free-tier sounds are available to all registered users (up to 3 downloads/day), while Pro sounds require an active subscription (up to 20 downloads/day) or per-item purchase.' },
     { q: 'What audio formats are available?', a: 'Sounds are available in WAV, MP3, OGG, and FLAC depending on the upload. The format is shown on each sound listing.' },
   ]},
   { category: 'Licensing', items: [
     { q: 'What license do I get when I download a free sound?', a: 'Free sounds come with a personal license. You may use them in non-commercial projects such as personal YouTube videos (non-monetized), school projects, and hobbyist content. Commercial use requires a subscription or per-item purchase.' },
     { q: 'What is the difference between Personal and Commercial license?', a: 'A Personal license allows use in non-commercial projects only. A Commercial license allows use in paid work, advertisements, client projects, and any monetized content. Both are perpetual — they do not expire.' },
     { q: 'Can I use sounds I downloaded through a subscription after it expires?', a: 'Yes. Once you download a sound under an active subscription, you retain the right to use it in the project you downloaded it for. However, you cannot download new sounds after your subscription expires.' },
-    { q: 'Can I resell or redistribute BeatHive sounds?', a: 'No. Reselling or redistributing sounds — in any form, modified or unmodified — is strictly prohibited under all license types.' },
+    { q: 'Can I resell or redistribute Arsonus sounds?', a: 'No. Reselling or redistributing sounds — in any form, modified or unmodified — is strictly prohibited under all license types.' },
   ]},
   { category: 'Subscription & Payments', items: [
     { q: 'What payment methods are accepted?', a: 'We accept QRIS, bank transfer, credit/debit cards, and other methods via Midtrans payment gateway.' },
@@ -52,7 +52,7 @@ export default function FaqPage() {
     <div className="max-w-3xl mx-auto px-4 py-12">
       <div className="text-center mb-10">
         <h1 className="text-2xl font-semibold text-white mb-2">Frequently Asked Questions</h1>
-        <p className="text-sm text-[#6b6f82]">Everything you need to know about BeatHive.</p>
+        <p className="text-sm text-[#6b6f82]">Everything you need to know about Arsonus.</p>
       </div>
 
       <div className="space-y-4">

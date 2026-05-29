@@ -32,9 +32,9 @@ function MiniWaveform({ data, isActive, progress }: { data: number[]; isActive: 
             style={{
               height: `${height}%`,
               backgroundColor: played
-                ? '#a78bfa'
+                ? '#ffaa4d'
                 : isActive
-                ? 'rgba(167,139,250,0.35)'
+                ? 'rgba(255,170,77,0.35)'
                 : 'rgba(255,255,255,0.12)',
               minWidth: '1.5px',
             }}
@@ -117,12 +117,12 @@ export default function SoundCard({ sound }: Props) {
           className={clsx(
             'absolute bottom-2 right-2 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md z-10',
             isActive
-              ? 'bg-accent shadow-[0_0_14px_rgba(139,92,246,0.45)]'
+              ? 'bg-accent shadow-[0_0_14px_rgba(247,148,29,0.45)]'
               : 'bg-[#0e0f1a]/80 border border-[#2a2c3e] group-hover:bg-accent/20 group-hover:border-accent/30',
           )}
         >
           {isCurrentlyPlaying ? (
-            <svg width="10" height="10" viewBox="0 0 12 12" fill={isActive ? 'white' : '#8b5cf6'}>
+            <svg width="10" height="10" viewBox="0 0 12 12" fill={isActive ? 'white' : '#F7941D'}>
               <rect x="1" y="1" width="4" height="10" rx="1.5"/>
               <rect x="7" y="1" width="4" height="10" rx="1.5"/>
             </svg>
@@ -211,7 +211,7 @@ export default function SoundCard({ sound }: Props) {
 
             {/* Action: owner badge | cart | download */}
             {isOwner ? (
-              <span className="text-[10px] text-violet-400 px-2 py-1 rounded bg-violet-500/10 border border-violet-500/20 font-medium">
+              <span className="text-[10px] text-accent-bright px-2 py-1 rounded bg-accent/10 border border-accent/20 font-medium">
                 Mine
               </span>
             ) : isPurchasable && !sound.isPurchased ? (

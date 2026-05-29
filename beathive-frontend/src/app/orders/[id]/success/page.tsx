@@ -175,13 +175,13 @@ function OrderSuccessContent() {
           {/* Header strip */}
           <div className="bg-accent px-5 py-4">
             <div className="flex items-center justify-between mb-1">
-              <span className="font-bold text-white tracking-tight">beathive</span>
+              <span className="font-bold text-white tracking-tight">arsonus</span>
               <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">
                 Paid ✓
               </span>
             </div>
-            <p className="text-sm text-violet-200 font-mono">{invoice.invoiceNumber}</p>
-            <p className="text-xs text-violet-300/80 mt-0.5">{formatDate(invoice.issuedAt)}</p>
+            <p className="text-sm text-orange-100 font-mono">{invoice.invoiceNumber}</p>
+            <p className="text-xs text-orange-200/80 mt-0.5">{formatDate(invoice.issuedAt)}</p>
           </div>
 
           <div className="bg-surface px-5 py-4">

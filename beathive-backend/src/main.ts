@@ -53,7 +53,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  console.log(`BeatHive Backend berjalan di: http://localhost:${port}/api/v1`);
+  console.log(`Arsonus Backend berjalan di: http://localhost:${port}/api/v1`);
   console.log(`Storage mode: ${process.env.AWS_ACCESS_KEY_ID && process.env.AWS_ACCESS_KEY_ID !== 'your_access_key' ? 'AWS S3' : 'LOCAL (./uploads/)'}`);
 }
 

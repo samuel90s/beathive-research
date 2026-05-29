@@ -17,8 +17,7 @@ function getPreviewLimit(categoryType?: string): number {
 
 function canPlayFull(accessLevel: string, userPlanSlug?: string): boolean {
   if (accessLevel === 'FREE') return true;
-  if (accessLevel === 'PRO' && (userPlanSlug === 'pro' || userPlanSlug === 'business')) return true;
-  if (accessLevel === 'BUSINESS' && userPlanSlug === 'business') return true;
+  if ((accessLevel === 'PRO' || accessLevel === 'BUSINESS') && userPlanSlug === 'pro') return true;
   return false;
 }
 
@@ -133,7 +132,7 @@ export default function GlobalPlayer() {
     <div className="fixed bottom-0 left-0 right-0 z-50">
       <style>{`
         input[type=range].player-range{-webkit-appearance:none;height:3px;background:transparent;border-radius:99px;cursor:pointer;outline:none}
-        input[type=range].player-range::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#8b5cf6;cursor:pointer;box-shadow:0 0 8px rgba(139,92,246,0.6);transition:transform .1s}
+        input[type=range].player-range::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#F7941D;cursor:pointer;box-shadow:0 0 8px rgba(247,148,29,0.6);transition:transform .1s}
         input[type=range].player-range:hover::-webkit-slider-thumb{transform:scale(1.2)}
         input[type=range].vol-range{-webkit-appearance:none;height:3px;background:rgba(255,255,255,0.1);border-radius:99px;cursor:pointer;outline:none}
         input[type=range].vol-range::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,0.6);cursor:pointer}
@@ -141,16 +140,16 @@ export default function GlobalPlayer() {
 
       {/* Preview locked banner */}
       {previewLocked && (
-        <div className="bg-gradient-to-r from-violet-900/95 to-indigo-900/95 backdrop-blur-xl border-t border-violet-500/30 px-4 py-2.5 flex items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-[#1a0e00]/95 to-[#0e1a18]/95 backdrop-blur-xl border-t border-accent/30 px-4 py-2.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round">
+            <div className="w-7 h-7 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center flex-shrink-0">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffaa4d" strokeWidth="2.5" strokeLinecap="round">
                 <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
             </div>
             <div>
-              <p className="text-xs font-semibold text-violet-200">{PREVIEW_LIMIT}s preview only</p>
-              <p className="text-[10px] text-violet-400">
+              <p className="text-xs font-semibold text-orange-100">{PREVIEW_LIMIT}s preview only</p>
+              <p className="text-[10px] text-accent-bright">
                 {currentTrack.accessLevel === 'PURCHASE'
                   ? 'Purchase this sound to play the full version'
                   : 'Upgrade to Pro to unlock full playback'}
@@ -160,20 +159,20 @@ export default function GlobalPlayer() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setPreviewLocked(false); audioRef.current && (audioRef.current.currentTime = 0); resume(); }}
-              className="px-3 py-1 text-xs text-violet-300 hover:text-white border border-violet-500/30 rounded-lg hover:bg-violet-500/10 transition-colors"
+              className="px-3 py-1 text-xs text-orange-200 hover:text-white border border-accent/30 rounded-lg hover:bg-accent/10 transition-colors"
             >
               Replay
             </button>
             {currentTrack.accessLevel === 'PURCHASE' ? (
               <button
                 onClick={() => { addItem(currentTrack, 'personal'); setPreviewLocked(false); }}
-                className="px-3 py-1 text-xs font-medium bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors"
+                className="px-3 py-1 text-xs font-medium bg-accent hover:bg-accent-dim text-white rounded-lg transition-colors"
               >
                 Buy Now
               </button>
             ) : (
               <a href="/pricing"
-                className="px-3 py-1 text-xs font-medium bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors"
+                className="px-3 py-1 text-xs font-medium bg-accent hover:bg-accent-dim text-white rounded-lg transition-colors"
               >
                 Upgrade
               </a>
@@ -204,7 +203,7 @@ export default function GlobalPlayer() {
             <button
               onClick={isPlaying ? pause : resume}
               disabled={previewLocked}
-              className="w-9 h-9 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-all shadow-[0_0_12px_rgba(139,92,246,0.4)] disabled:opacity-40 flex-shrink-0"
+              className="w-9 h-9 rounded-full bg-accent hover:bg-accent-dim flex items-center justify-center transition-all shadow-[0_0_12px_rgba(247,148,29,0.4)] disabled:opacity-40 flex-shrink-0"
             >
               {isPlaying ? (
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="white">
@@ -326,7 +325,7 @@ export default function GlobalPlayer() {
           {/* Action button */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {isOwner ? (
-              <span className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-violet-500/10 text-violet-400 border border-violet-500/20">
+              <span className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-accent/10 text-accent-bright border border-accent/20">
                 Your Sound
               </span>
             ) : isPurchasable && !currentTrack.isPurchased ? (
@@ -336,7 +335,7 @@ export default function GlobalPlayer() {
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   inCart
                     ? 'bg-accent/20 text-accent-bright border border-accent/20'
-                    : 'bg-accent text-white hover:bg-accent-dim shadow-[0_0_12px_rgba(139,92,246,0.3)]'
+                    : 'bg-accent text-white hover:bg-accent-dim shadow-[0_0_12px_rgba(247,148,29,0.3)]'
                 }`}
               >
                 {inCart ? (

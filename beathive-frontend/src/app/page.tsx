@@ -214,7 +214,7 @@ export default async function HomePage() {
         <div className="card rounded-2xl p-8 relative overflow-hidden">
           <div className="absolute inset-0 bg-hero-glow opacity-50 pointer-events-none" />
           <div className="relative">
-            <h2 className="text-xl font-semibold text-white mb-6 text-center">How BeatHive works</h2>
+            <h2 className="text-xl font-semibold text-white mb-6 text-center">How Arsonus works</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { step: '01', title: 'Search & Preview', desc: 'Search thousands of sounds. Preview 30-second clips directly in your browser.' },

@@ -18,9 +18,8 @@ async function main() {
 
   // ─── Plans ──────────────────────────────────────────────────
   const plans = [
-    { name: 'Free',     slug: 'free',     priceMonthly: 0,       priceYearly: 0,        downloadLimit: 5,   commercialLicense: false, unlimited: false },
-    { name: 'Pro',      slug: 'pro',      priceMonthly: 99000,   priceYearly: 890000,   downloadLimit: 100, commercialLicense: true,  unlimited: false },
-    { name: 'Business', slug: 'business', priceMonthly: 299000,  priceYearly: 2500000,  downloadLimit: -1,  commercialLicense: true,  unlimited: true  },
+    { name: 'Free', slug: 'free', priceMonthly: 0,     priceYearly: 0,      downloadLimit: 3,  commercialLicense: false, unlimited: false },
+    { name: 'Pro',  slug: 'pro',  priceMonthly: 25000, priceYearly: 220000, downloadLimit: 20, commercialLicense: true,  unlimited: false },
   ]
 
   for (const plan of plans) {

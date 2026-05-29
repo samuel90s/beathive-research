@@ -90,7 +90,7 @@ export default function SoundRow({ sound }: Props) {
 
   const accessBadge = {
     FREE:     null,
-    PRO:      { label: 'PRO',      cls: 'bg-violet-500/15 text-violet-400 border-violet-500/20' },
+    PRO:      { label: 'PRO',      cls: 'bg-accent/15 text-accent-bright border-accent/20' },
     BUSINESS: { label: 'BUSINESS', cls: 'bg-blue-500/15 text-blue-400 border-blue-500/20' },
     PURCHASE: null,
   }[sound.accessLevel];
@@ -106,7 +106,7 @@ export default function SoundRow({ sound }: Props) {
           ? 'border-accent/40 bg-accent/8'
           : 'border-rim bg-surface hover:border-white/[0.12] hover:bg-lift',
       )}
-      style={isActive ? { backgroundColor: 'rgba(139,92,246,0.08)' } : undefined}
+      style={isActive ? { backgroundColor: 'rgba(247,148,29,0.08)' } : undefined}
     >
       {/* Category color thumbnail */}
       <div className={clsx(
@@ -120,12 +120,12 @@ export default function SoundRow({ sound }: Props) {
         className={clsx(
           'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-150 relative',
           isActive
-            ? 'bg-accent shadow-[0_0_12px_rgba(139,92,246,0.4)]'
+            ? 'bg-accent shadow-[0_0_12px_rgba(247,148,29,0.4)]'
             : 'bg-white/[0.06] group-hover:bg-accent/20',
         )}
       >
         {isCurrentlyPlaying ? (
-          <svg width="9" height="9" viewBox="0 0 10 10" fill={isActive ? 'white' : '#8b5cf6'}>
+          <svg width="9" height="9" viewBox="0 0 10 10" fill={isActive ? 'white' : '#F7941D'}>
             <rect x="1" y="0" width="3" height="10" rx="1.5"/>
             <rect x="6" y="0" width="3" height="10" rx="1.5"/>
           </svg>
@@ -208,7 +208,7 @@ export default function SoundRow({ sound }: Props) {
 
         {/* Owner badge — replaces all actions */}
         {isOwner ? (
-          <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-violet-500/10 text-violet-400 border border-violet-500/20">
+          <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-accent/10 text-accent-bright border border-accent/20">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
             </svg>

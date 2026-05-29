@@ -145,12 +145,23 @@ export default function Navbar() {
         <div className="px-5 h-16 flex items-center gap-1">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 mr-4 flex-shrink-0">
-            <div className="w-7 h-7 rounded-lg bg-accent/20 border border-accent/30 flex items-center justify-center">
-              <EqIcon />
-            </div>
-            <span className="text-[15px] font-bold tracking-tight">
-              <span className="text-white">beat</span><span className="text-accent-bright">hive</span>
+          <Link href="/" className="flex items-center gap-2.5 mr-4 flex-shrink-0">
+            {/* Arsonus waveform icon */}
+            <svg width="28" height="22" viewBox="0 0 56 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Outer dots */}
+              <ellipse cx="4" cy="22" rx="4" ry="6" fill="#F7941D"/>
+              <ellipse cx="52" cy="22" rx="4" ry="6" fill="#F7941D"/>
+              {/* Short bars */}
+              <rect x="10" y="14" width="5" height="16" rx="2.5" fill="#F7941D"/>
+              <rect x="41" y="14" width="5" height="16" rx="2.5" fill="#F7941D"/>
+              {/* Tall bars */}
+              <rect x="19" y="6" width="5" height="32" rx="2.5" fill="#F7941D"/>
+              <rect x="32" y="6" width="5" height="32" rx="2.5" fill="#F7941D"/>
+              {/* Center loop */}
+              <path d="M26 8 C26 2 30 0 30 0 C30 0 34 2 34 8 L34 36 C34 42 30 44 30 44 C30 44 26 42 26 36 Z" fill="none" stroke="#F7941D" strokeWidth="3" strokeLinejoin="round"/>
+            </svg>
+            <span className="text-[15px] font-bold tracking-[0.08em] uppercase text-white" style={{ fontFamily: 'Oswald, sans-serif' }}>
+              ARSONUS
             </span>
           </Link>
 
@@ -226,32 +237,66 @@ export default function Navbar() {
                 {/* Subscription quota chip */}
                 {subscription && !subscription.plan.unlimited && subscription.usage && (
                   <span className="text-[11px] text-[#5a5d72] bg-white/[0.04] border border-[#1a1b2e] px-2.5 py-1 rounded-full hidden lg:block">
-                    {subscription.usage.downloadsThisMonth}/{subscription.plan.downloadLimit} dl
+                    {subscription.usage.downloadsThisMonth}/{subscription.plan.downloadLimit}/hari
                   </span>
                 )}
 
-                {/* Dashboard — klik avatar langsung masuk */}
-                <Link href="/dashboard"
-                  className={clsx('flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full transition-all duration-150 border',
-                    pathname.startsWith('/dashboard') || pathname.startsWith('/profile')
-                      ? 'border-accent/30 bg-accent/10'
-                      : 'border-[#1a1b2e] hover:border-white/10 hover:bg-white/[0.04]')}>
-                  <div className="w-6 h-6 rounded-full bg-accent/25 flex items-center justify-center text-accent-bright text-[11px] font-bold overflow-hidden flex-shrink-0">
-                    {user?.avatarUrl
-                      ? <Image src={mediaUrl(user.avatarUrl)!} alt="" width={24} height={24} className="w-full h-full object-cover" />
-                      : user?.name?.[0]?.toUpperCase()}
-                  </div>
-                  <span className="text-[13px] text-[#c4c6d8] font-medium">{user?.name?.split(' ')[0]}</span>
-                </Link>
+                {/* Avatar dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setMenuOpen(v => !v)}
+                    className={clsx('flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full transition-all duration-150 border',
+                      menuOpen || pathname.startsWith('/profile') || pathname.startsWith('/studio') || pathname.startsWith('/dashboard')
+                        ? 'border-accent/30 bg-accent/10'
+                        : 'border-[#1a1b2e] hover:border-white/10 hover:bg-white/[0.04]')}>
+                    <div className="w-6 h-6 rounded-full bg-accent/25 flex items-center justify-center text-accent-bright text-[11px] font-bold overflow-hidden flex-shrink-0">
+                      {user?.avatarUrl
+                        ? <Image src={mediaUrl(user.avatarUrl)!} alt="" width={24} height={24} className="w-full h-full object-cover" />
+                        : user?.name?.[0]?.toUpperCase()}
+                    </div>
+                    <span className="text-[13px] text-[#c4c6d8] font-medium">{user?.name?.split(' ')[0]}</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                      className={clsx('text-[#5a5d72] transition-transform', menuOpen && 'rotate-180')}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
 
-                {/* Logout */}
-                <button onClick={() => logout()} title="Logout"
-                  className="p-1.5 rounded-lg text-[#3a3c4e] hover:text-red-400 hover:bg-red-500/10 transition-all duration-150">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                  </svg>
-                </button>
+                  {menuOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 w-52 bg-surface border border-rim rounded-xl shadow-elevated z-50 py-1.5 overflow-hidden">
+                      {/* User info header */}
+                      <div className="px-4 py-2.5 border-b border-rim mb-1">
+                        <p className="text-sm font-semibold text-white truncate">{user?.name}</p>
+                        <p className="text-xs text-[#5a5d72] truncate">{user?.email}</p>
+                        {subscription && (
+                          <span className={clsx(
+                            'inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full font-semibold',
+                            subscription.plan.slug === 'pro' ? 'bg-violet-500/20 text-violet-300' : 'bg-white/[0.05] text-[#6b6f82]'
+                          )}>
+                            {subscription.plan.name}
+                          </span>
+                        )}
+                      </div>
+
+                      <Link href="/profile" onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-[#c4c6d8] hover:text-white hover:bg-white/[0.05] transition-colors">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/>
+                        </svg>
+                        Profil
+                      </Link>
+
+                      <div className="border-t border-rim my-1" />
+                      <button onClick={() => { setMenuOpen(false); logout(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="hidden md:flex items-center gap-2 ml-2">
@@ -294,11 +339,17 @@ export default function Navbar() {
             {/* Drawer header */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-rim">
               <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-                <div className="w-6 h-6 rounded-md bg-accent/20 border border-accent/30 flex items-center justify-center">
-                  <EqIcon />
-                </div>
-                <span className="text-sm font-bold">
-                  <span className="text-white">beat</span><span className="text-accent-bright">hive</span>
+                <svg width="22" height="18" viewBox="0 0 56 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse cx="4" cy="22" rx="4" ry="6" fill="#F7941D"/>
+                  <ellipse cx="52" cy="22" rx="4" ry="6" fill="#F7941D"/>
+                  <rect x="10" y="14" width="5" height="16" rx="2.5" fill="#F7941D"/>
+                  <rect x="41" y="14" width="5" height="16" rx="2.5" fill="#F7941D"/>
+                  <rect x="19" y="6" width="5" height="32" rx="2.5" fill="#F7941D"/>
+                  <rect x="32" y="6" width="5" height="32" rx="2.5" fill="#F7941D"/>
+                  <path d="M26 8 C26 2 30 0 30 0 C30 0 34 2 34 8 L34 36 C34 42 30 44 30 44 C30 44 26 42 26 36 Z" fill="none" stroke="#F7941D" strokeWidth="3" strokeLinejoin="round"/>
+                </svg>
+                <span className="text-sm font-bold tracking-[0.08em] uppercase text-white" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                  ARSONUS
                 </span>
               </Link>
               <button
@@ -330,14 +381,13 @@ export default function Navbar() {
                     <span className={clsx(
                       'text-[10px] px-2 py-0.5 rounded-full font-semibold',
                       subscription.plan.slug === 'pro' ? 'bg-violet-500/20 text-violet-300' :
-                      subscription.plan.slug === 'business' ? 'bg-amber-500/20 text-amber-300' :
                       'bg-white/[0.05] text-[#6b6f82]'
                     )}>
                       {subscription.plan.name}
                     </span>
                     {subscription.usage && !subscription.plan.unlimited && (
                       <span className="text-[10px] text-[#6b6f82]">
-                        {subscription.usage.downloadsThisMonth}/{subscription.plan.downloadLimit} downloads
+                        {subscription.usage.downloadsThisMonth}/{subscription.plan.downloadLimit} /hari
                       </span>
                     )}
                   </div>
@@ -379,25 +429,30 @@ export default function Navbar() {
                   <div className="border-t border-rim my-2" />
                   <p className="text-[10px] font-semibold text-[#4a4d5e] uppercase tracking-widest px-2 mb-2">Account</p>
 
-                  <Link href="/dashboard" onClick={() => setMobileOpen(false)}
+                  <Link href="/profile" onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b8fa8] hover:text-white hover:bg-white/[0.05] transition-colors">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                    Dashboard
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Profile
+                  </Link>
+                  <Link href="/studio" onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b8fa8] hover:text-white hover:bg-white/[0.05] transition-colors">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    Studio
                   </Link>
                   <Link href="/dashboard/downloads" onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b8fa8] hover:text-white hover:bg-white/[0.05] transition-colors">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Download History
                   </Link>
+                  <Link href="/dashboard/orders" onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b8fa8] hover:text-white hover:bg-white/[0.05] transition-colors">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    Pesanan
+                  </Link>
                   <Link href="/wishlist" onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b8fa8] hover:text-white hover:bg-white/[0.05] transition-colors">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     Wishlist
-                  </Link>
-                  <Link href="/profile" onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b8fa8] hover:text-white hover:bg-white/[0.05] transition-colors">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    Profile
                   </Link>
 
                   {user?.role === 'ADMIN' && (

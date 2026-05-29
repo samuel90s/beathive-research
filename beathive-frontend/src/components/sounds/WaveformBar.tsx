@@ -27,9 +27,9 @@ function WaveformBar({ data, isActive, progress }: Props) {
             style={{
               height: `${h}px`,
               backgroundColor: played
-                ? '#8b5cf6'
+                ? '#F7941D'
                 : active
-                ? 'rgba(139,92,246,0.35)'
+                ? 'rgba(247,148,29,0.35)'
                 : 'rgba(255,255,255,0.1)',
               minWidth: '2px',
             }}

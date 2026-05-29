@@ -38,7 +38,7 @@ export default function AdminDashboard() {
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-white">Dashboard</h1>
-        <p className="text-sm text-[#6b6f82] mt-0.5">BeatHive Platform Overview</p>
+        <p className="text-sm text-[#6b6f82] mt-0.5">Arsonus Platform Overview</p>
       </div>
 
       {!stats ? (

@@ -39,7 +39,6 @@ export default function AdminUsersPage() {
   const PLAN_COLORS: Record<string, string> = {
     free: 'bg-white/[0.05] text-[#8b8fa8]',
     pro: 'bg-accent/10 text-accent-bright',
-    business: 'bg-amber-500/10 text-amber-400',
   };
 
   return (

@@ -11,7 +11,7 @@ export class EmailService {
   constructor(private config: ConfigService) {
     const mailgunKey = this.config.get<string>('MAILGUN_API_KEY');
     const mailgunDomain = this.config.get<string>('MAILGUN_DOMAIN');
-    this.emailFrom = this.config.get<string>('EMAIL_FROM', 'noreply@beathive.com');
+    this.emailFrom = this.config.get<string>('EMAIL_FROM', 'noreply@Arsonus.com');
 
     // Mailgun SMTP configuration
     this.transporter = nodemailer.createTransport({
@@ -33,7 +33,7 @@ export class EmailService {
       await this.transporter.sendMail({
         from: this.emailFrom,
         to: email,
-        subject: 'Reset Your BeatHive Password',
+        subject: 'Reset Your Arsonus Password',
         html,
       });
       this.logger.log(`Password reset email sent to ${email}`);
@@ -114,8 +114,8 @@ export class EmailService {
         <!DOCTYPE html><html><head><style>
           body { font-family: Arial, sans-serif; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { color: #7c3aed; margin-bottom: 20px; }
-          .info { background-color: #f5f3ff; padding: 15px; border-left: 4px solid #7c3aed; margin: 20px 0; }
+          .header { color: #F7941D; margin-bottom: 20px; }
+          .info { background-color: #f5f3ff; padding: 15px; border-left: 4px solid #F7941D; margin: 20px 0; }
           .footer { color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
         </style></head><body>
           <div class="container">
@@ -129,7 +129,7 @@ export class EmailService {
               <p><strong>Status:</strong> Pending</p>
             </div>
             <p>You'll be notified by email once it's processed (usually within 1-3 business days).</p>
-            <div class="footer"><p>BeatHive © 2026. All rights reserved.</p></div>
+            <div class="footer"><p>Arsonus © 2026. All rights reserved.</p></div>
           </div>
         </body></html>
       `;
@@ -143,12 +143,12 @@ export class EmailService {
 
   async sendSubscriptionExpiring(email: string, userName: string, planName: string, expiryDate: string) {
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">
-      <h2 style="color:#7c3aed">Subscription kamu akan habis dalam 7 hari</h2>
+      <h2 style="color:#F7941D">Subscription kamu akan habis dalam 7 hari</h2>
       <p>Hi ${userName},</p>
       <p>Subscription <strong>${planName}</strong> kamu akan berakhir pada <strong>${expiryDate}</strong>.</p>
       <p>Perpanjang sekarang untuk tetap bisa download sound tanpa batas.</p>
-      <a href="${process.env.FRONTEND_URL}/pricing" style="background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Perpanjang Sekarang</a>
-      <p style="color:#999;font-size:12px;margin-top:24px">BeatHive &copy; 2026</p>
+      <a href="${process.env.FRONTEND_URL}/pricing" style="background:#F7941D;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Perpanjang Sekarang</a>
+      <p style="color:#999;font-size:12px;margin-top:24px">Arsonus &copy; 2026</p>
     </body></html>`;
     await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: `Subscription ${planName} berakhir dalam 7 hari`, html }).catch(e => this.logger.error(e.message));
   }
@@ -159,8 +159,8 @@ export class EmailService {
       <p>Hi ${userName},</p>
       <p>Kamu hanya punya <strong>${remaining} download</strong> tersisa dari ${limit}/bulan.</p>
       <p>Upgrade plan untuk mendapatkan lebih banyak download.</p>
-      <a href="${process.env.FRONTEND_URL}/pricing" style="background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Lihat Plan</a>
-      <p style="color:#999;font-size:12px;margin-top:24px">BeatHive &copy; 2026</p>
+      <a href="${process.env.FRONTEND_URL}/pricing" style="background:#F7941D;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Lihat Plan</a>
+      <p style="color:#999;font-size:12px;margin-top:24px">Arsonus &copy; 2026</p>
     </body></html>`;
     await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: `Sisa ${remaining} download bulan ini`, html }).catch(e => this.logger.error(e.message));
   }
@@ -171,22 +171,22 @@ export class EmailService {
       <p>Hi ${creatorName},</p>
       <p>Sound <strong>"${soundTitle}"</strong> baru saja dibeli dengan <strong>${licenseType} license</strong>.</p>
       <p>Earning kamu bertambah <strong>Rp ${amount.toLocaleString('id-ID')}</strong>.</p>
-      <a href="${process.env.FRONTEND_URL}/dashboard/earnings" style="background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Lihat Earnings</a>
-      <p style="color:#999;font-size:12px;margin-top:24px">BeatHive &copy; 2026</p>
+      <a href="${process.env.FRONTEND_URL}/dashboard/earnings" style="background:#F7941D;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Lihat Earnings</a>
+      <p style="color:#999;font-size:12px;margin-top:24px">Arsonus &copy; 2026</p>
     </body></html>`;
     await this.transporter.sendMail({ from: this.emailFrom, to: creatorEmail, subject: `Sound terjual: "${soundTitle}"`, html }).catch(e => this.logger.error(e.message));
   }
 
   async sendEmailVerification(email: string, userName: string, verifyUrl: string) {
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">
-      <h2 style="color:#7c3aed">Verifikasi Email BeatHive</h2>
+      <h2 style="color:#F7941D">Verifikasi Email Arsonus</h2>
       <p>Hi ${userName},</p>
-      <p>Terima kasih telah mendaftar di BeatHive! Klik tombol di bawah untuk verifikasi email kamu.</p>
-      <a href="${verifyUrl}" style="background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Verifikasi Email</a>
+      <p>Terima kasih telah mendaftar di Arsonus! Klik tombol di bawah untuk verifikasi email kamu.</p>
+      <a href="${verifyUrl}" style="background:#F7941D;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Verifikasi Email</a>
       <p style="color:#999;font-size:12px">Link berlaku 24 jam. Jika tidak mendaftar, abaikan email ini.</p>
-      <p style="color:#999;font-size:12px;margin-top:24px">BeatHive &copy; 2026</p>
+      <p style="color:#999;font-size:12px;margin-top:24px">Arsonus &copy; 2026</p>
     </body></html>`;
-    await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: 'Verifikasi Email BeatHive', html }).catch(e => this.logger.error(e.message));
+    await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: 'Verifikasi Email Arsonus', html }).catch(e => this.logger.error(e.message));
   }
 
   // HTML Templates
@@ -198,8 +198,8 @@ export class EmailService {
           <style>
             body { font-family: Arial, sans-serif; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { color: #7c3aed; margin-bottom: 20px; }
-            .btn { background-color: #7c3aed; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; display: inline-block; margin-top: 20px; }
+            .header { color: #F7941D; margin-bottom: 20px; }
+            .btn { background-color: #F7941D; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; display: inline-block; margin-top: 20px; }
             .footer { color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
           </style>
         </head>
@@ -207,11 +207,11 @@ export class EmailService {
           <div class="container">
             <h1 class="header">Reset Your Password</h1>
             <p>Hi ${userName},</p>
-            <p>We received a request to reset your BeatHive password. Click the button below to set a new password.</p>
+            <p>We received a request to reset your Arsonus password. Click the button below to set a new password.</p>
             <a href="${resetUrl}" class="btn">Reset Password</a>
             <p>If you didn't request this, you can ignore this email. This link expires in 1 hour.</p>
             <div class="footer">
-              <p>BeatHive © 2026. All rights reserved.</p>
+              <p>Arsonus © 2026. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -245,7 +245,7 @@ export class EmailService {
             </div>
             <p>You'll receive another notification once the transfer is complete.</p>
             <div class="footer">
-              <p>BeatHive © 2026. All rights reserved.</p>
+              <p>Arsonus © 2026. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -277,7 +277,7 @@ export class EmailService {
             </div>
             <p>Please check your profile to ensure all bank details are correct, then try again. Contact support if you need help.</p>
             <div class="footer">
-              <p>BeatHive © 2026. All rights reserved.</p>
+              <p>Arsonus © 2026. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -308,7 +308,7 @@ export class EmailService {
             <p><strong>Amount:</strong> Rp ${totalAmount.toLocaleString('id-ID')}</p>
             <p>Go to your dashboard to view and download your sounds.</p>
             <div class="footer">
-              <p>BeatHive © 2026. All rights reserved.</p>
+              <p>Arsonus © 2026. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -339,7 +339,7 @@ export class EmailService {
           <div class="container">
             <h1 class="header">${statusText}: "${soundTitle}"</h1>
             <p>Hi ${userName},</p>
-            <p>${isApproved ? 'Great news! Your sound has been approved and is now live on BeatHive.' : 'Your sound submission has been reviewed and unfortunately was not approved.'}</p>
+            <p>${isApproved ? 'Great news! Your sound has been approved and is now live on Arsonus.' : 'Your sound submission has been reviewed and unfortunately was not approved.'}</p>
             <div class="info">
               <p><strong>Sound Title:</strong> ${soundTitle}</p>
               <p><strong>Status:</strong> ${status}</p>
@@ -347,7 +347,7 @@ export class EmailService {
             </div>
             ${isApproved ? '<p>Your sound is now available for download!</p>' : '<p>Review the feedback and try uploading again. We\'re here to help!</p>'}
             <div class="footer">
-              <p>BeatHive © 2026. All rights reserved.</p>
+              <p>Arsonus © 2026. All rights reserved.</p>
             </div>
           </div>
         </body>

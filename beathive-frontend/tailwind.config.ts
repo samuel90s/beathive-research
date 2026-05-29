@@ -8,26 +8,37 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Oswald', 'Tall Films Expanded', 'sans-serif'],
+        heading: ['Tall Films Expanded', 'Oswald', 'sans-serif'],
+      },
       colors: {
-        base:    '#0c0d16',
-        surface: '#13141f',
-        lift:    '#1c1d2e',
+        base:    '#0c0d10',
+        surface: '#111318',
+        lift:    '#191b22',
         rim:     'rgba(255,255,255,0.07)',
+        // Arsonus primary — Carrot Orange
         accent: {
-          DEFAULT: '#8b5cf6',
-          dim:     '#7c3aed',
-          bright:  '#a78bfa',
-          glow:    'rgba(139,92,246,0.22)',
+          DEFAULT: '#F7941D',
+          dim:     '#e07e0a',
+          bright:  '#ffaa4d',
+          glow:    'rgba(247,148,29,0.22)',
         },
+        // Arsonus secondary — Verdigris
         teal: {
-          DEFAULT: '#2dd4bf',
-          dim:     '#14b8a6',
+          DEFAULT: '#00A79D',
+          dim:     '#008c83',
+        },
+        // Arsonus tertiary — Carmine
+        carmine: {
+          DEFAULT: '#BE1E2D',
+          dim:     '#a01828',
         },
         muted: '#6b7280',
       },
       backgroundImage: {
-        'hero-glow':   'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139,92,246,0.2) 0%, transparent 65%)',
-        'card-glow':   'radial-gradient(ellipse 60% 60% at 50% 50%, rgba(139,92,246,0.08) 0%, transparent 70%)',
+        'hero-glow':   'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(247,148,29,0.15) 0%, transparent 65%)',
+        'card-glow':   'radial-gradient(ellipse 60% 60% at 50% 50%, rgba(247,148,29,0.06) 0%, transparent 70%)',
       },
       animation: {
         'slide-in':  'slideIn 0.22s ease-out',
@@ -54,8 +65,8 @@ const config: Config = {
         },
       },
       boxShadow: {
-        'glow':     '0 0 24px rgba(139,92,246,0.35)',
-        'glow-sm':  '0 0 12px rgba(139,92,246,0.2)',
+        'glow':     '0 0 24px rgba(247,148,29,0.35)',
+        'glow-sm':  '0 0 12px rgba(247,148,29,0.2)',
         'surface':  '0 2px 8px rgba(0,0,0,0.5)',
         'elevated': '0 8px 32px rgba(0,0,0,0.6)',
       },

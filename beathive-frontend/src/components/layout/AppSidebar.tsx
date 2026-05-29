@@ -86,7 +86,7 @@ function AppSidebarInner() {
   return (
     <aside className={clsx(
       'flex-shrink-0 hidden md:flex flex-col border-r border-[#1a1b2e] transition-all duration-200',
-      collapsed ? 'w-14' : 'w-56',
+      collapsed ? 'w-14' : 'w-52',
     )}>
       {/* Toggle button */}
       <div className={clsx('flex py-3 px-2', collapsed ? 'justify-center' : 'justify-end')}>
@@ -96,11 +96,9 @@ function AppSidebarInner() {
           className="w-7 h-7 rounded-lg flex items-center justify-center text-[#3a3c4e] hover:text-[#6b6f82] hover:bg-white/[0.05] transition-all"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            {collapsed ? (
-              <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>
-            ) : (
-              <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>
-            )}
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
           </svg>
         </button>
       </div>
@@ -126,8 +124,6 @@ function AppSidebarInner() {
             <div>
               <SectionLabel collapsed={collapsed}>Akun</SectionLabel>
               <div className="space-y-0.5">
-                <NavItem href="/dashboard" label="Dashboard" exact collapsed={collapsed}
-                  icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>} />
                 <NavItem href="/dashboard/downloads" label="Download History" collapsed={collapsed}
                   icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>} />
                 <NavItem href="/dashboard/orders" label="Pesanan" collapsed={collapsed}
@@ -138,18 +134,9 @@ function AppSidebarInner() {
             <div>
               <SectionLabel collapsed={collapsed}>Creator</SectionLabel>
               <div className="space-y-0.5">
-                <NavItem href="/studio" label="Studio" collapsed={collapsed}
+                <NavItem href="/studio" label="Studio" collapsed={collapsed} exact
                   icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>} />
-                <NavItem href="/dashboard/earnings" label="Earnings" collapsed={collapsed}
-                  icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>} />
-                <NavItem href="/dashboard/analytics" label="Analytics" collapsed={collapsed}
-                  icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>} />
               </div>
-            </div>
-
-            <div className="border-t border-[#1a1b2e] pt-3">
-              <NavItem href="/profile" label="Profil" exact collapsed={collapsed}
-                icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>} />
             </div>
           </>
         )}
@@ -187,7 +174,7 @@ function AppSidebarInner() {
 
 export function AppSidebar() {
   return (
-    <Suspense fallback={<aside className="w-56 flex-shrink-0 border-r border-[#1a1b2e]" />}>
+    <Suspense fallback={<aside className="w-52 flex-shrink-0 border-r border-[#1a1b2e]" />}>
       <AppSidebarInner />
     </Suspense>
   );

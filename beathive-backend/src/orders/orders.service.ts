@@ -270,7 +270,7 @@ export class OrdersService {
       const fmtRp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
       // Header
-      doc.fontSize(22).font('Helvetica-Bold').text('BeatHive', 50, 50);
+      doc.fontSize(22).font('Helvetica-Bold').text('Arsonus', 50, 50);
       doc.fontSize(10).font('Helvetica').fillColor('#666').text('Sound Effect Marketplace', 50, 78);
       doc.fillColor('#000');
 
@@ -288,7 +288,7 @@ export class OrdersService {
 
       // Table header
       const tableTop = 195;
-      doc.rect(50, tableTop, 495, 24).fill('#7c3aed');
+      doc.rect(50, tableTop, 495, 24).fill('#F7941D');
       doc.fillColor('#fff').fontSize(10).font('Helvetica-Bold');
       doc.text('Sound Effect', 60, tableTop + 7);
       doc.text('Lisensi', 320, tableTop + 7);
@@ -322,14 +322,14 @@ export class OrdersService {
       drawRow(`Biaya Layanan (${SERVICE_FEE_PERCENT}%)`, fmtRp(serviceFee));
       drawRow(`PPN (${TAX_PERCENT}%)`, fmtRp(tax));
       y += 4;
-      doc.moveTo(350, y).lineTo(545, y).strokeColor('#7c3aed').stroke();
+      doc.moveTo(350, y).lineTo(545, y).strokeColor('#F7941D').stroke();
       y += 8;
       const grandTotal = inv.subtotal + serviceFee + tax;
       drawRow('TOTAL', fmtRp(grandTotal), true);
 
       // Footer
       doc.fontSize(9).fillColor('#999').font('Helvetica')
-        .text('Terima kasih telah menggunakan BeatHive.', 50, 720, { align: 'center', width: 495 });
+        .text('Terima kasih telah menggunakan Arsonus.', 50, 720, { align: 'center', width: 495 });
 
       doc.end();
     });
@@ -508,7 +508,7 @@ export class OrdersService {
       },
       custom_colors: {
         primary_color:     '#8b5cf6',
-        secondary_color:   '#7c3aed',
+        secondary_color:   '#F7941D',
         button_link_color: '#a78bfa',
       },
     };

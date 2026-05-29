@@ -123,8 +123,7 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
   const canReview = isAuthenticated && (
     sound.isPurchased ||
     sound.accessLevel === 'FREE' ||
-    (sound.accessLevel === 'PRO' && isSubActive && (planSlug === 'pro' || planSlug === 'business')) ||
-    (sound.accessLevel === 'BUSINESS' && isSubActive && planSlug === 'business')
+    ((sound.accessLevel === 'PRO' || sound.accessLevel === 'BUSINESS') && isSubActive && planSlug === 'pro')
   );
 
   const formatFileSize = (bytes?: number) => {
@@ -398,8 +397,7 @@ interface CTAProps {
 function DownloadCTA({ sound, user, inCart, isAuthenticated, downloading, onDownload, onAddCart, onRemoveCart, onLogin, onBuyNow }: CTAProps) {
   const planSlug = user?.subscription?.plan.slug;
   const isSubActive = user?.subscription?.status === 'ACTIVE';
-  const hasProAccess = isSubActive && (planSlug === 'pro' || planSlug === 'business');
-  const hasBusinessAccess = isSubActive && planSlug === 'business';
+  const hasProAccess = isSubActive && planSlug === 'pro';
 
   const isPurchasable = sound.accessLevel === 'PURCHASE' ||
     ((sound.accessLevel === 'PRO' || sound.accessLevel === 'BUSINESS') && sound.price > 0);
@@ -486,19 +484,20 @@ function DownloadCTA({ sound, user, inCart, isAuthenticated, downloading, onDown
   }
 
   if (sound.accessLevel === 'BUSINESS') {
-    if (hasBusinessAccess) {
-      return <div className="flex gap-3"><DownloadBtn label="Download (Business)" /></div>;
+    // Treat BUSINESS sounds same as PRO since Business plan is removed
+    if (hasProAccess) {
+      return <div className="flex gap-3"><DownloadBtn label="Download" /></div>;
     }
     return (
-      <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/20">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400 flex-shrink-0">
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 flex-shrink-0">
           <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
         </svg>
         <div className="flex-1">
-          <p className="text-xs font-semibold text-purple-400">Business Plan Required</p>
+          <p className="text-xs font-semibold text-amber-400">Pro Plan Required</p>
           <p className="text-xs text-[#6b6f82] mt-0.5">Upgrade to download this sound</p>
         </div>
-        <Link href="/pricing" className="px-3 py-1.5 text-xs font-semibold bg-purple-500 hover:bg-purple-400 text-white rounded-lg transition-colors flex-shrink-0">
+        <Link href="/pricing" className="px-3 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-black rounded-lg transition-colors flex-shrink-0">
           Upgrade
         </Link>
       </div>

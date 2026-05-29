@@ -36,7 +36,7 @@ export function InvoiceModal({ invoice, onClose, onDownload, downloading, closeL
         {/* Header */}
         <div className="bg-accent px-6 py-5 text-white">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-lg font-bold">BeatHive</span>
+            <span className="text-lg font-bold">Arsonus</span>
             <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Payment Successful ✓</span>
           </div>
           <p className="text-sm text-accent-bright/80">{invoice.invoiceNumber}</p>

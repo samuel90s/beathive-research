@@ -429,7 +429,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException();
 
-    const secret = speakeasy.generateSecret({ name: `BeatHive (${user.email})`, length: 20 });
+    const secret = speakeasy.generateSecret({ name: `Arsonus (${user.email})`, length: 20 });
 
     // Store temp secret (not yet enabled until verified)
     await this.prisma.user.update({ where: { id: userId }, data: { totpSecret: secret.base32 } });

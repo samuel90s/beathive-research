@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Tall Films Expanded font-face ─────────────────────── */
+/* Jika kamu punya file font Tall Films Expanded, taruh di /public/fonts/
+   dan uncomment @font-face di bawah ini. Saat ini heading memakai Oswald
+   sebagai font utama (tersedia via Google Fonts). */
+/*
+@font-face {
+  font-family: 'Tall Films Expanded';
+  src: url('/fonts/TallFilmsExpanded.woff2') format('woff2'),
+       url('/fonts/TallFilmsExpanded.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+*/
+
 /* ─── Theme Variables ─────────────────────────────────── */
 
 :root,
@@ -16,30 +31,34 @@
   --text-muted:  #6b7280;
   --text-subtle: #9ca3af;
 
-  --accent:       #7c3aed;
-  --accent-dim:   #6d28d9;
-  --accent-bright:#8b5cf6;
-  --teal:         #0d9488;
+  /* Arsonus brand colors */
+  --accent:       #F7941D;
+  --accent-dim:   #e07e0a;
+  --accent-bright:#F7941D;
+  --teal:         #00A79D;
+  --carmine:      #BE1E2D;
 
   --shadow-surface: 0 1px 4px rgba(0,0,0,0.1);
   --shadow-elevated: 0 8px 24px rgba(0,0,0,0.15);
 }
 
 .dark {
-  --bg-base:    #0c0d16;
-  --bg-surface: #13141f;
-  --bg-lift:    #1c1d2e;
+  --bg-base:    #0c0d10;
+  --bg-surface: #111318;
+  --bg-lift:    #191b22;
   --bg-rim:     rgba(255,255,255,0.07);
 
-  --text-primary: #e2e3ef;
-  --text-secondary: #c4c6d8;
+  --text-primary: #e8e9f0;
+  --text-secondary: #c8cad8;
   --text-muted:  #8b8fa8;
   --text-subtle: #6b6f82;
 
-  --accent:       #7c3aed;
-  --accent-dim:   #6d28d9;
-  --accent-bright:#a78bfa;
-  --teal:         #2dd4bf;
+  /* Arsonus brand colors — background tetap hitam */
+  --accent:       #F7941D;
+  --accent-dim:   #e07e0a;
+  --accent-bright:#ffaa4d;
+  --teal:         #00A79D;
+  --carmine:      #BE1E2D;
 
   --shadow-surface: 0 2px 8px rgba(0,0,0,0.5);
   --shadow-elevated: 0 8px 32px rgba(0,0,0,0.6);
@@ -56,15 +75,23 @@
   body {
     background-color: var(--bg-base);
     color: var(--text-primary);
+    font-family: 'Oswald', 'Tall Films Expanded', sans-serif;
+    letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.2s, color 0.2s;
   }
 
+  /* Heading pakai Tall Films Expanded jika tersedia, fallback Oswald */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Tall Films Expanded', 'Oswald', sans-serif;
+    letter-spacing: 0.02em;
+  }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 999px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,0.5); }
+  ::-webkit-scrollbar-thumb { background: rgba(247,148,29,0.35); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(247,148,29,0.55); }
 }
 
 /* ─── Components ───────────────────────────────────────── */
@@ -99,7 +126,7 @@
   }
   .btn-accent:hover {
     background: var(--accent-dim);
-    box-shadow: 0 0 20px rgba(139,92,246,0.4);
+    box-shadow: 0 0 20px rgba(247,148,29,0.45);
   }
   .btn-accent:active { transform: scale(0.98); }
 
@@ -109,9 +136,9 @@
     transition: border-color 0.15s, background 0.15s, color 0.15s;
   }
   .btn-ghost:hover {
-    border-color: rgba(139,92,246,0.4);
+    border-color: rgba(247,148,29,0.4);
     color: var(--accent-bright);
-    background: rgba(139,92,246,0.06);
+    background: rgba(247,148,29,0.06);
   }
 
   .input-dark {
@@ -126,12 +153,12 @@
   .input-dark::placeholder { color: var(--text-subtle); }
   .input-dark:focus {
     outline: none;
-    border-color: rgba(139,92,246,0.6);
-    box-shadow: 0 0 0 3px rgba(139,92,246,0.12);
+    border-color: rgba(247,148,29,0.6);
+    box-shadow: 0 0 0 3px rgba(247,148,29,0.12);
   }
 
   .nav-active {
-    background: rgba(139,92,246,0.12);
+    background: rgba(247,148,29,0.12);
     color: var(--accent-bright);
   }
 }
@@ -143,20 +170,20 @@
   .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
   .text-gradient {
-    background: linear-gradient(135deg, #a78bfa 0%, #22d3ee 100%);
+    background: linear-gradient(135deg, #F7941D 0%, #00A79D 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .text-gradient-violet {
-    background: linear-gradient(135deg, #c084fc 0%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #ffaa4d 0%, #F7941D 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  .glow-violet   { box-shadow: 0 0 24px rgba(139,92,246,0.4); }
-  .glow-violet-sm { box-shadow: 0 0 12px rgba(139,92,246,0.25); }
+  .glow-violet   { box-shadow: 0 0 24px rgba(247,148,29,0.4); }
+  .glow-violet-sm { box-shadow: 0 0 12px rgba(247,148,29,0.25); }
 
   .bg-grid {
     background-image:

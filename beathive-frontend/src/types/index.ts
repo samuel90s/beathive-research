@@ -19,7 +19,7 @@ export interface User {
 export interface Plan {
   id: string;
   name: string;
-  slug: 'free' | 'pro' | 'business';
+  slug: 'free' | 'pro';
   priceMonthly: number;
   priceYearly: number;
   downloadLimit: number;

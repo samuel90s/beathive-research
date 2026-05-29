@@ -475,11 +475,11 @@ export class SoundsService {
         include: { plan: true },
       });
 
-      const planHierarchy = ['free', 'pro', 'business'];
+      const planHierarchy = ['free', 'pro'];
       const accessReq: Record<string, number> = {
         FREE: 0,
         PRO: 1,
-        BUSINESS: 2,
+        BUSINESS: 1, // treat same as PRO for backward compat
         PURCHASE: 999,
       };
       const required = accessReq[sound.accessLevel] ?? 999;
@@ -530,13 +530,14 @@ export class SoundsService {
     const downloadRecord = await this.prisma.$transaction(async (tx) => {
       if (needsQuotaCheck) {
         const now = new Date();
-        const thisMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-        const downloadsThisMonth = await tx.download.count({
-          where: { userId, source: 'subscription', downloadedAt: { gte: thisMonth } },
+        // Kuota per HARI (bukan per bulan)
+        const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        const downloadsToday = await tx.download.count({
+          where: { userId, source: 'subscription', downloadedAt: { gte: todayStart } },
         });
-        if (downloadsThisMonth >= subscription.plan.downloadLimit) {
+        if (downloadsToday >= subscription.plan.downloadLimit) {
           throw new ForbiddenException(
-            `Monthly download limit reached (${subscription.plan.downloadLimit}x). Wait until next month or upgrade your plan.`,
+            `Daily download limit reached (${subscription.plan.downloadLimit}x/day). Come back tomorrow or upgrade your plan.`,
           );
         }
       }
@@ -569,7 +570,7 @@ export class SoundsService {
       downloadUrl,
       requiresAuth,
       expiresAt,
-      fileName: `${sound.slug}-beathive.zip`,
+      fileName: `${sound.slug}-arsonus.zip`,
     };
   }
 
