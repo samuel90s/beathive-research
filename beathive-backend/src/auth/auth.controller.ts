@@ -100,9 +100,18 @@ export class AuthController {
 
   // POST /auth/reset-password
   @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() body: { token: string; newPassword: string }) {
     return this.authService.resetPassword(body.token, body.newPassword);
+  }
+
+  // POST /auth/logout
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async logout(@CurrentUser() userId: string) {
+    return this.authService.logout(userId);
   }
 
   // POST /auth/refresh

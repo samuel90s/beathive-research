@@ -12,7 +12,8 @@ async function bootstrap() {
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: false, // allow frontend (port 3001) to load images/audio from backend (port 3000)
   }));
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
+  app.useStaticAssets(join(process.cwd(), 'uploads', 'avatars'), { prefix: '/uploads/avatars' });
+  app.useStaticAssets(join(process.cwd(), 'uploads', 'previews'), { prefix: '/uploads/previews' });
 
   // Global validation pipe — validasi semua DTO otomatis
   app.useGlobalPipes(

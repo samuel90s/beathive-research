@@ -32,6 +32,8 @@ model User {
 
   emailVerified      Boolean  @default(true)  // true untuk user lama, false untuk register baru
   emailVerifyToken   String?
+  refreshTokenHash   String?
+  refreshTokenUpdatedAt DateTime?
 
   subscription   Subscription?
   orders         Order[]

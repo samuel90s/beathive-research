@@ -36,6 +36,7 @@ export function useAuth() {
   };
 
   const logout = () => {
+    authApi.logout().catch(() => {});
     cart.clearCart(); // Clear cart on logout so next user starts fresh
     store.logout();
     router.push('/');

@@ -18,6 +18,10 @@ export const authApi = {
     return data;
   },
 
+  logout: async () => {
+    await apiClient.post('/auth/logout');
+  },
+
   exchangeCode: async (code: string) => {
     const { data } = await apiClient.post('/auth/exchange-code', { code });
     return data as { user: User } & AuthTokens;

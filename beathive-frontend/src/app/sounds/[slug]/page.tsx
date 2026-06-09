@@ -5,10 +5,11 @@ import SoundDetailClient from './SoundDetailClient';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 
 export async function generateMetadata(
-  { params }: { params: { slug: string } },
+  { params }: { params: Promise<{ slug: string }> },
 ): Promise<Metadata> {
+  const { slug } = await params;
   try {
-    const res = await fetch(`${API_URL}/sounds/${params.slug}`, {
+    const res = await fetch(`${API_URL}/sounds/${slug}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return { title: 'Arsonus' };
@@ -32,6 +33,7 @@ export async function generateMetadata(
   }
 }
 
-export default function SoundDetailPage({ params }: { params: { slug: string } }) {
-  return <SoundDetailClient slug={params.slug} />;
+export default async function SoundDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  return <SoundDetailClient slug={slug} />;
 }

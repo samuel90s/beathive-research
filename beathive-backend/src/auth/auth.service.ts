@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import * as speakeasy from 'speakeasy';
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
@@ -177,12 +178,18 @@ export class AuthService {
       });
 
       if (!user) throw new UnauthorizedException();
+      await this.assertRefreshTokenIsCurrent(user.id, refreshToken);
 
       const tokens = await this.generateTokens(user.id, user.email);
       return tokens;
     } catch {
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
+  }
+
+  async logout(userId: string) {
+    await this.revokeRefreshToken(userId);
+    return { message: 'Logged out successfully' };
   }
 
   // ─── Google OAuth callback ──────────────────────────────
@@ -390,6 +397,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    await this.revokeRefreshToken(userId);
     return { message: 'Password updated successfully' };
   }
 
@@ -496,6 +504,7 @@ export class AuthService {
       where: { id: decoded.sub },
       data: { passwordHash },
     });
+    await this.revokeRefreshToken(decoded.sub);
 
     return { message: 'Password reset successfully' };
   }
@@ -516,7 +525,44 @@ export class AuthService {
       }),
     ]);
 
+    await this.storeRefreshTokenHash(userId, refreshToken);
     return { accessToken, refreshToken };
+  }
+
+  private hashToken(token: string) {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private async storeRefreshTokenHash(userId: string, refreshToken: string) {
+    const hash = this.hashToken(refreshToken);
+    await this.prisma.$executeRaw`
+      UPDATE users
+      SET "refreshTokenHash" = ${hash}, "refreshTokenUpdatedAt" = NOW()
+      WHERE id = ${userId}
+    `;
+  }
+
+  private async revokeRefreshToken(userId: string) {
+    await this.prisma.$executeRaw`
+      UPDATE users
+      SET "refreshTokenHash" = NULL, "refreshTokenUpdatedAt" = NOW()
+      WHERE id = ${userId}
+    `;
+  }
+
+  private async assertRefreshTokenIsCurrent(userId: string, refreshToken: string) {
+    const rows = await this.prisma.$queryRaw<Array<{ refreshTokenHash: string | null }>>`
+      SELECT "refreshTokenHash" FROM users WHERE id = ${userId} LIMIT 1
+    `;
+    const storedHash = rows[0]?.refreshTokenHash;
+    if (!storedHash) throw new UnauthorizedException();
+
+    const incoming = Buffer.from(this.hashToken(refreshToken), 'hex');
+    const stored = Buffer.from(storedHash, 'hex');
+    if (incoming.length !== stored.length || !crypto.timingSafeEqual(incoming, stored)) {
+      await this.revokeRefreshToken(userId);
+      throw new UnauthorizedException();
+    }
   }
 
   private sanitizeUser(user: any) {

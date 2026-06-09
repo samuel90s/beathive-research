@@ -1,0 +1,3 @@
+ALTER TABLE "users"
+ADD COLUMN IF NOT EXISTS "refreshTokenHash" TEXT,
+ADD COLUMN IF NOT EXISTS "refreshTokenUpdatedAt" TIMESTAMP(3);

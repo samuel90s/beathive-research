@@ -203,16 +203,30 @@ export class SoundsController {
       const [startStr, endStr] = range.replace(/bytes=/, '').split('-');
       const start = parseInt(startStr, 10);
       const end   = endStr ? parseInt(endStr, 10) : fileSize - 1;
-      const chunk = end - start + 1;
+      if (
+        Number.isNaN(start) ||
+        Number.isNaN(end) ||
+        start < 0 ||
+        end < start ||
+        start >= fileSize
+      ) {
+        res.writeHead(416, {
+          'Content-Range': `bytes */${fileSize}`,
+          'Accept-Ranges': 'bytes',
+        });
+        return res.end();
+      }
+      const safeEnd = Math.min(end, fileSize - 1);
+      const chunk = safeEnd - start + 1;
 
       res.writeHead(206, {
-        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Content-Range': `bytes ${start}-${safeEnd}/${fileSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': chunk,
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=3600',
       });
-      fs.createReadStream(filePath, { start, end }).pipe(res);
+      fs.createReadStream(filePath, { start, end: safeEnd }).pipe(res);
     } else {
       res.writeHead(200, {
         'Content-Length': fileSize,
