@@ -4,39 +4,68 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null = null;
   private readonly logger = new Logger(EmailService.name);
   private readonly emailFrom: string;
+  private readonly isConfigured: boolean;
 
   constructor(private config: ConfigService) {
-    const mailgunKey = this.config.get<string>('MAILGUN_API_KEY');
-    const mailgunDomain = this.config.get<string>('MAILGUN_DOMAIN');
-    this.emailFrom = this.config.get<string>('EMAIL_FROM', 'noreply@Arsonus.com');
+    this.emailFrom = this.config.get<string>('EMAIL_FROM', 'noreply@arsonus.com');
 
-    // Mailgun SMTP configuration
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.mailgun.org',
-      port: 587,
-      secure: false,
-      auth: {
-        user: `postmaster@${mailgunDomain}`,
-        pass: mailgunKey,
-      },
-    });
+    // ── SMTP configuration ────────────────────────────────────────────────────
+    // Supports generic SMTP (Gmail, Mailgun, SendGrid, etc.)
+    // Priority: SMTP_HOST > MAILGUN_DOMAIN > disabled
+    const smtpHost = this.config.get<string>('SMTP_HOST', '');
+    const smtpPort = parseInt(this.config.get<string>('SMTP_PORT', '587'), 10);
+    const smtpUser = this.config.get<string>('SMTP_USER', '');
+    const smtpPass = this.config.get<string>('SMTP_PASS', '');
+    const mailgunDomain = this.config.get<string>('MAILGUN_DOMAIN', '');
+    const mailgunKey = this.config.get<string>('MAILGUN_API_KEY', '');
 
-    this.logger.log(`Email service initialized with domain: ${mailgunDomain}`);
+    if (smtpHost && smtpUser && smtpPass) {
+      // Generic SMTP (Gmail, SendGrid, custom, etc.)
+      this.transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+      this.isConfigured = true;
+      this.logger.log(`Email service initialized via SMTP: ${smtpHost}:${smtpPort}`);
+    } else if (mailgunDomain && mailgunKey && mailgunKey !== 'your_mailgun_key') {
+      // Legacy Mailgun SMTP config
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.mailgun.org',
+        port: 587,
+        secure: false,
+        auth: { user: `postmaster@${mailgunDomain}`, pass: mailgunKey },
+      });
+      this.isConfigured = true;
+      this.logger.log(`Email service initialized via Mailgun: ${mailgunDomain}`);
+    } else {
+      // No email configured — log warning but don't crash
+      this.isConfigured = false;
+      this.logger.warn('⚠️  Email service NOT configured — emails will be logged to console only');
+      this.logger.warn('   Set SMTP_HOST + SMTP_USER + SMTP_PASS to enable email sending');
+    }
+  }
+
+  /**
+   * Internal send helper — logs to console if email not configured
+   */
+  private async send(to: string, subject: string, html: string): Promise<void> {
+    if (!this.isConfigured || !this.transporter) {
+      this.logger.warn(`📧 [DRY-RUN] To: ${to} | Subject: ${subject}`);
+      return;
+    }
+    await this.transporter.sendMail({ from: this.emailFrom, to, subject, html });
+    this.logger.log(`Email sent to ${to}: ${subject}`);
   }
 
   async sendPasswordReset(email: string, resetUrl: string, userName: string = 'User') {
     try {
       const html = this.getPasswordResetTemplate(resetUrl, userName);
-      await this.transporter.sendMail({
-        from: this.emailFrom,
-        to: email,
-        subject: 'Reset Your Arsonus Password',
-        html,
-      });
-      this.logger.log(`Password reset email sent to ${email}`);
+      await this.send(email, 'Reset Your Arsonus Password', html);
     } catch (err) {
       this.logger.error(`Failed to send password reset email to ${email}: ${err.message}`);
       throw err;
@@ -46,13 +75,7 @@ export class EmailService {
   async sendWithdrawalApproved(email: string, amount: number, bankDetails: { bankName: string; accountNo: string }, userName: string = 'Creator') {
     try {
       const html = this.getWithdrawalApprovedTemplate(amount, bankDetails, userName);
-      await this.transporter.sendMail({
-        from: this.emailFrom,
-        to: email,
-        subject: 'Your Withdrawal Has Been Approved',
-        html,
-      });
-      this.logger.log(`Withdrawal approved email sent to ${email}`);
+      await this.send(email, 'Your Withdrawal Has Been Approved', html);
     } catch (err) {
       this.logger.error(`Failed to send withdrawal email to ${email}: ${err.message}`);
       throw err;
@@ -62,13 +85,7 @@ export class EmailService {
   async sendWithdrawalRejected(email: string, amount: number, reason: string, userName: string = 'Creator') {
     try {
       const html = this.getWithdrawalRejectedTemplate(amount, reason, userName);
-      await this.transporter.sendMail({
-        from: this.emailFrom,
-        to: email,
-        subject: 'Your Withdrawal Request Was Rejected',
-        html,
-      });
-      this.logger.log(`Withdrawal rejected email sent to ${email}`);
+      await this.send(email, 'Your Withdrawal Request Was Rejected', html);
     } catch (err) {
       this.logger.error(`Failed to send withdrawal rejection email to ${email}: ${err.message}`);
       throw err;
@@ -78,13 +95,7 @@ export class EmailService {
   async sendPaymentConfirmed(email: string, orderId: string, totalAmount: number, userName: string = 'User') {
     try {
       const html = this.getPaymentConfirmedTemplate(orderId, totalAmount, userName);
-      await this.transporter.sendMail({
-        from: this.emailFrom,
-        to: email,
-        subject: 'Payment Confirmed - Your Order',
-        html,
-      });
-      this.logger.log(`Payment confirmation email sent to ${email}`);
+      await this.send(email, 'Payment Confirmed - Your Order', html);
     } catch (err) {
       this.logger.error(`Failed to send payment confirmation email to ${email}: ${err.message}`);
       throw err;
@@ -95,13 +106,7 @@ export class EmailService {
     try {
       const html = this.getSoundReviewTemplate(soundTitle, status, reviewNote, userName);
       const subject = status === 'APPROVED' ? `Your Sound "${soundTitle}" Was Approved` : `Your Sound "${soundTitle}" Was Rejected`;
-      await this.transporter.sendMail({
-        from: this.emailFrom,
-        to: email,
-        subject,
-        html,
-      });
-      this.logger.log(`Sound review notification sent to ${email}`);
+      await this.send(email, subject, html);
     } catch (err) {
       this.logger.error(`Failed to send sound review email to ${email}: ${err.message}`);
       throw err;
@@ -133,8 +138,7 @@ export class EmailService {
           </div>
         </body></html>
       `;
-      await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: 'Withdrawal Request Submitted', html });
-      this.logger.log(`Withdrawal requested email sent to ${email}`);
+      await this.send(email, 'Withdrawal Request Submitted', html);
     } catch (err) {
       this.logger.error(`Failed to send withdrawal requested email to ${email}: ${err.message}`);
       throw err;
@@ -150,7 +154,7 @@ export class EmailService {
       <a href="${process.env.FRONTEND_URL}/pricing" style="background:#F7941D;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Perpanjang Sekarang</a>
       <p style="color:#999;font-size:12px;margin-top:24px">Arsonus &copy; 2026</p>
     </body></html>`;
-    await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: `Subscription ${planName} berakhir dalam 7 hari`, html }).catch(e => this.logger.error(e.message));
+    await this.send(email, `Subscription ${planName} berakhir dalam 7 hari`, html).catch(e => this.logger.error(e.message));
   }
 
   async sendQuotaLow(email: string, userName: string, remaining: number, limit: number) {
@@ -162,7 +166,7 @@ export class EmailService {
       <a href="${process.env.FRONTEND_URL}/pricing" style="background:#F7941D;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Lihat Plan</a>
       <p style="color:#999;font-size:12px;margin-top:24px">Arsonus &copy; 2026</p>
     </body></html>`;
-    await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: `Sisa ${remaining} download bulan ini`, html }).catch(e => this.logger.error(e.message));
+    await this.send(email, `Sisa ${remaining} download bulan ini`, html).catch(e => this.logger.error(e.message));
   }
 
   async sendSoundSold(creatorEmail: string, creatorName: string, soundTitle: string, amount: number, licenseType: string) {
@@ -174,7 +178,7 @@ export class EmailService {
       <a href="${process.env.FRONTEND_URL}/dashboard/earnings" style="background:#F7941D;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">Lihat Earnings</a>
       <p style="color:#999;font-size:12px;margin-top:24px">Arsonus &copy; 2026</p>
     </body></html>`;
-    await this.transporter.sendMail({ from: this.emailFrom, to: creatorEmail, subject: `Sound terjual: "${soundTitle}"`, html }).catch(e => this.logger.error(e.message));
+    await this.send(creatorEmail, `Sound terjual: "${soundTitle}"`, html).catch(e => this.logger.error(e.message));
   }
 
   async sendEmailVerification(email: string, userName: string, verifyUrl: string) {
@@ -186,7 +190,7 @@ export class EmailService {
       <p style="color:#999;font-size:12px">Link berlaku 24 jam. Jika tidak mendaftar, abaikan email ini.</p>
       <p style="color:#999;font-size:12px;margin-top:24px">Arsonus &copy; 2026</p>
     </body></html>`;
-    await this.transporter.sendMail({ from: this.emailFrom, to: email, subject: 'Verifikasi Email Arsonus', html }).catch(e => this.logger.error(e.message));
+    await this.send(email, 'Verifikasi Email Arsonus', html).catch(e => this.logger.error(e.message));
   }
 
   // HTML Templates

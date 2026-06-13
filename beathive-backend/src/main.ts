@@ -1,7 +1,7 @@
 // src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { join } from 'path';
 import helmet from 'helmet';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -10,11 +10,12 @@ import { AppModule } from './app.module';
 import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filter';
 
 const isProd = process.env.NODE_ENV === 'production';
+const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     // Sembunyikan stack trace dari response error di production
-    logger: isProd ? ['error', 'warn'] : ['log', 'error', 'warn', 'debug', 'verbose'],
+    logger: isProd ? ['error', 'warn', 'log'] : ['log', 'error', 'warn', 'debug', 'verbose'],
   });
 
   // ── Trust proxy (penting untuk rate limiting & IP detection di behind nginx) ──
@@ -115,8 +116,19 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  console.log(`Arsonus Backend berjalan di: http://localhost:${port}/api/v1`);
-  console.log(`Mode: ${isProd ? 'PRODUCTION' : 'DEVELOPMENT'} | Storage: ${process.env.AWS_ACCESS_KEY_ID && process.env.AWS_ACCESS_KEY_ID !== 'your_access_key' ? 'AWS S3' : 'LOCAL (./uploads/)'}`);
+
+  // ── Structured startup log ─────────────────────────────────────────────────
+  const storageMode = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_ACCESS_KEY_ID !== 'your_access_key' ? 'AWS S3' : 'LOCAL';
+  const memMB = Math.round(process.memoryUsage().rss / 1024 / 1024);
+
+  logger.log(`🚀 Arsonus Backend started`);
+  logger.log(`   URL      : http://localhost:${port}/api/v1`);
+  logger.log(`   Mode     : ${isProd ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+  logger.log(`   Storage  : ${storageMode}`);
+  logger.log(`   PID      : ${process.pid}`);
+  logger.log(`   Memory   : ${memMB} MB`);
+  logger.log(`   Health   : http://localhost:${port}/api/v1/health`);
 }
 
 bootstrap();
+

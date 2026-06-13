@@ -12,6 +12,7 @@ import { AdminModule } from './admin/admin.module';
 import { EarningsModule } from './earnings/earnings.module';
 import { EmailModule } from './email/email.module';
 import { RatingsModule } from './ratings/ratings.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { RatingsModule } from './ratings/ratings.module';
     AdminModule,
     EarningsModule,
     RatingsModule,
+    HealthModule,
   ],
   providers: [
     PrismaService,
