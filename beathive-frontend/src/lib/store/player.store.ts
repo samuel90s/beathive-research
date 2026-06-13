@@ -1,24 +1,24 @@
 // src/lib/store/player.store.ts
 // Global audio player state — satu player untuk seluruh app
 import { create } from 'zustand';
-import type { SoundEffect } from '@/types';
+import type { AudioAsset } from '@/types';
 
 interface PlayerState {
-  currentTrack: SoundEffect | null;
+  currentTrack: AudioAsset | null;
   isPlaying: boolean;
   progress: number;       // 0–100
   duration: number;       // dalam detik
   volume: number;         // 0–1
-  queue: SoundEffect[];
+  queue: AudioAsset[];
 
-  play: (track: SoundEffect) => void;
+  play: (track: AudioAsset) => void;
   pause: () => void;
   resume: () => void;
   stop: () => void;
   setProgress: (progress: number) => void;
   setDuration: (duration: number) => void;
   setVolume: (volume: number) => void;
-  addToQueue: (track: SoundEffect) => void;
+  addToQueue: (track: AudioAsset) => void;
   playNext: () => void;
 }
 

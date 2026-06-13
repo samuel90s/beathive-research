@@ -23,7 +23,7 @@ export const ordersApi = {
   create: async (items: CartItem[]) => {
     const { data } = await apiClient.post('/orders', {
       items: items.map((i) => ({
-        soundEffectId: i.sound.id,
+        audioAssetId: i.sound.id,
         licenseType: i.licenseType,
       })),
     });

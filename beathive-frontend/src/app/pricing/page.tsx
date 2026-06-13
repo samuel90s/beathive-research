@@ -97,16 +97,15 @@ function ConfirmModal({ plan, onConfirm, onClose, loading }: {
 const FREE_FEATURES = [
   '3 downloads per hari',
   'Akses semua sound gratis',
-  '30-second preview semua SFX',
-  'Personal license only',
+  'Preview semua audio',
+  'Personal license',
 ];
 
 const PRO_FEATURES = [
   '20 downloads per hari',
-  'Akses semua Pro & Free SFX',
-  'Commercial license included',
+  'Akses semua Pro & Free',
+  'Commercial license',
   'Original WAV download',
-  'Priority support',
 ];
 
 export default function PricingPage() {
@@ -161,98 +160,79 @@ export default function PricingPage() {
         />
       )}
 
-      <div className="max-w-4xl mx-auto px-4 py-14">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-white mb-3">Choose the right plan</h1>
-          <p className="text-[#6b6f82] mb-8">Start free, upgrade anytime. No contracts.</p>
-
-          {/* Duration selector */}
-          <div className="inline-flex items-center gap-1 bg-white/[0.05] border border-rim p-1 rounded-xl">
-            {DURATIONS.map((d) => (
-              <button
-                key={d.value}
-                onClick={() => setDuration(d.value)}
-                className={`relative px-4 py-1.5 text-sm rounded-lg transition-all ${
-                  duration === d.value
-                    ? 'bg-white/[0.08] text-white font-medium shadow-sm'
-                    : 'text-[#6b6f82] hover:text-[#c4c6d8]'
-                }`}
-              >
-                {d.label}
-                {d.savePercent && (
-                  <span className={`ml-1.5 text-[10px] font-semibold ${
-                    duration === d.value ? 'text-[#00A79D]' : 'text-[#4a4d5e]'
-                  }`}>
-                    -{d.savePercent}%
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+      <div className="max-w-3xl mx-auto px-4 py-10">
+        <div className="mb-7">
+          <p className="text-xs font-semibold text-accent-bright uppercase tracking-[0.16em] mb-2">Pricing</p>
+          <h1 className="text-2xl font-bold text-white">Pilih plan</h1>
+          <p className="text-sm text-[#6b6f82] mt-1">Mulai gratis, upgrade saat butuh akses lebih.</p>
         </div>
 
-        {/* 2-column plan cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="card rounded-2xl p-5 flex flex-col border border-rim">
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div>
+                <h2 className="text-base font-semibold text-white">Free</h2>
+                <p className="text-xs text-[#6b6f82] mt-0.5">Untuk coba-coba dulu</p>
+              </div>
+              <span className="text-xs px-2 py-1 rounded-full bg-white/[0.04] text-[#8b8fa8] border border-white/[0.06]">Selamanya</span>
+            </div>
 
-          {/* ── Free ── */}
-          <div className="card rounded-2xl p-7 flex flex-col">
-            <div className="mb-5">
-              <h2 className="text-base font-semibold text-white">Free</h2>
-              <p className="text-xs text-[#6b6f82] mt-0.5">Just getting started</p>
-            </div>
-            <div className="mb-6">
-              <div className="text-3xl font-bold text-white">Free</div>
-              <p className="text-xs text-[#5a5d72] mt-1">Selamanya</p>
-            </div>
-            <ul className="space-y-3 mb-8 flex-1">
+            <div className="text-2xl font-bold text-white mb-5">Free</div>
+
+            <ul className="space-y-2.5 mb-6 flex-1">
               {FREE_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#8b8fa8]">
-                  <svg className="w-4 h-4 text-[#00A79D] flex-shrink-0 mt-0.5" viewBox="0 0 16 16" fill="currentColor">
+                  <svg className="w-4 h-4 text-teal flex-shrink-0 mt-0.5" viewBox="0 0 16 16" fill="currentColor">
                     <path fillRule="evenodd" d="M13.28 4.22a.75.75 0 010 1.06l-6.5 6.5a.75.75 0 01-1.06 0l-3-3a.75.75 0 111.06-1.06L6.25 10.19l5.97-5.97a.75.75 0 011.06 0z"/>
                   </svg>
                   {f}
                 </li>
               ))}
             </ul>
+
             <button
               onClick={() => router.push(isAuthenticated ? '/browse' : '/auth/register')}
               className="w-full py-2.5 rounded-xl text-sm font-semibold btn-ghost transition-all"
             >
-              {isAuthenticated ? 'Browse Sounds' : 'Get Started Free'}
+              {isAuthenticated ? 'Browse Sounds' : 'Mulai Gratis'}
             </button>
           </div>
 
-          {/* ── Pro ── */}
-          <div className="relative rounded-2xl p-7 flex flex-col bg-accent/10 border-2 border-accent/50 shadow-glow">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-              <span className="bg-accent text-white text-xs px-3 py-1 rounded-full font-semibold shadow-glow-sm">
-                Most Popular
-              </span>
+          <div className="rounded-2xl p-5 flex flex-col bg-accent/[0.08] border border-accent/40">
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div>
+                <h2 className="text-base font-semibold text-white">Pro</h2>
+                <p className="text-xs text-[#6b6f82] mt-0.5">Untuk creator aktif</p>
+              </div>
+              <span className="text-xs px-2 py-1 rounded-full bg-accent text-white font-semibold">Popular</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1 bg-black/20 border border-white/[0.06] p-1 rounded-xl mb-5">
+              {DURATIONS.map((d) => (
+                <button
+                  key={d.value}
+                  onClick={() => setDuration(d.value)}
+                  className={duration === d.value
+                    ? 'px-2 py-1.5 text-xs rounded-lg transition-all bg-white text-black font-semibold'
+                    : 'px-2 py-1.5 text-xs rounded-lg transition-all text-[#8b8fa8] hover:text-white hover:bg-white/[0.05]'}
+                >
+                  {d.label}
+                  {d.savePercent && <span className="ml-1 opacity-70">-{d.savePercent}%</span>}
+                </button>
+              ))}
             </div>
 
             <div className="mb-5">
-              <h2 className="text-base font-semibold text-white">Pro</h2>
-              <p className="text-xs text-[#6b6f82] mt-0.5">For active creators</p>
-            </div>
-
-            <div className="mb-6">
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-white">{formatPrice(monthlyEquiv)}</span>
+                <span className="text-2xl font-bold text-white">{formatPrice(monthlyEquiv)}</span>
                 <span className="text-sm text-[#6b6f82]">/mo</span>
               </div>
-              {selectedDuration.months > 1 ? (
-                <p className="text-xs text-[#00A79D] mt-1">
-                  Tagihan {formatPrice(proPrice)} untuk {selectedDuration.label}
-                  {selectedDuration.savePercent && (
-                    <span className="ml-1">· Hemat {selectedDuration.savePercent}%</span>
-                  )}
-                </p>
-              ) : (
-                <p className="text-xs text-[#5a5d72] mt-1">Tagihan {formatPrice(proPrice)}/bulan</p>
-              )}
+              <p className="text-xs text-[#5a5d72] mt-1">
+                Tagihan {formatPrice(proPrice)} untuk {selectedDuration.label}
+              </p>
             </div>
 
-            <ul className="space-y-3 mb-8 flex-1">
+            <ul className="space-y-2.5 mb-6 flex-1">
               {PRO_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#c4c6d8]">
                   <svg className="w-4 h-4 text-accent-bright flex-shrink-0 mt-0.5" viewBox="0 0 16 16" fill="currentColor">
@@ -273,58 +253,11 @@ export default function PricingPage() {
               ) : 'Start Pro'}
             </button>
           </div>
-
         </div>
 
-        {/* Bottom note */}
-        <p className="text-center text-xs text-[#5a5d72] mt-8">
-          All plans can be cancelled anytime. Access remains active until the end of the billing period.
+        <p className="text-xs text-[#5a5d72] mt-5">
+          Bisa dibatalkan kapan saja. Akses tetap aktif sampai akhir periode billing.
         </p>
-
-        {/* Comparison table */}
-        <div className="mt-12 max-w-2xl mx-auto">
-          <h3 className="text-sm font-semibold text-[#6b6f82] uppercase tracking-widest text-center mb-5">Perbandingan Lengkap</h3>
-          <div className="card rounded-2xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-rim">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-[#5a5d72] uppercase tracking-wide w-1/2">Fitur</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold text-[#5a5d72] uppercase tracking-wide">Free</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold text-accent-bright uppercase tracking-wide">Pro</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1a1b2e]">
-                {[
-                  { label: 'Download per hari', free: '3 / hari', pro: '20 / hari' },
-                  { label: 'Akses sound gratis', free: true, pro: true },
-                  { label: 'Akses sound Pro', free: false, pro: true },
-                  { label: 'Commercial license', free: false, pro: true },
-                  { label: 'Original WAV', free: false, pro: true },
-                  { label: 'Preview 30 detik', free: true, pro: true },
-                  { label: 'Priority support', free: false, pro: true },
-                ].map((row) => (
-                  <tr key={row.label} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-5 py-3 text-[#8b8fa8]">{row.label}</td>
-                    <td className="px-5 py-3 text-center">
-                      {typeof row.free === 'boolean' ? (
-                        row.free
-                          ? <svg className="w-4 h-4 text-[#00A79D] mx-auto" viewBox="0 0 16 16" fill="currentColor"><path fillRule="evenodd" d="M13.28 4.22a.75.75 0 010 1.06l-6.5 6.5a.75.75 0 01-1.06 0l-3-3a.75.75 0 111.06-1.06L6.25 10.19l5.97-5.97a.75.75 0 011.06 0z"/></svg>
-                          : <svg className="w-4 h-4 text-[#2a2c3e] mx-auto" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.749.749 0 011.275.326.749.749 0 01-.215.734L9.06 8l3.22 3.22a.749.749 0 01-.326 1.275.749.749 0 01-.734-.215L8 9.06l-3.22 3.22a.751.751 0 01-1.042-.018.751.751 0 01-.018-1.042L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>
-                      ) : <span className="text-[#8b8fa8] text-xs">{row.free}</span>}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      {typeof row.pro === 'boolean' ? (
-                        row.pro
-                          ? <svg className="w-4 h-4 text-accent-bright mx-auto" viewBox="0 0 16 16" fill="currentColor"><path fillRule="evenodd" d="M13.28 4.22a.75.75 0 010 1.06l-6.5 6.5a.75.75 0 01-1.06 0l-3-3a.75.75 0 111.06-1.06L6.25 10.19l5.97-5.97a.75.75 0 011.06 0z"/></svg>
-                          : <svg className="w-4 h-4 text-[#2a2c3e] mx-auto" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.749.749 0 011.275.326.749.749 0 01-.215.734L9.06 8l3.22 3.22a.749.749 0 01-.326 1.275.749.749 0 01-.734-.215L8 9.06l-3.22 3.22a.751.751 0 01-1.042-.018.751.751 0 01-.018-1.042L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>
-                      ) : <span className="text-accent-bright text-xs font-semibold">{row.pro}</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
       </div>
     </>
   );

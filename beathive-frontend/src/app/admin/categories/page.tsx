@@ -5,7 +5,7 @@ import { useAuthStore } from '@/lib/store/auth.store';
 import { toast } from '@/lib/store/toast.store';
 
 
-interface Category { id: string; name: string; slug: string; icon?: string; _count: { soundEffects: number } }
+interface Category { id: string; name: string; slug: string; icon?: string; _count: { audioAssets: number } }
 
 function slugify(str: string) {
   return str.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -146,7 +146,7 @@ export default function AdminCategoriesPage() {
                   <td className="px-4 py-3 text-lg">{cat.icon || '—'}</td>
                   <td className="px-4 py-3 text-sm font-medium text-white">{cat.name}</td>
                   <td className="px-4 py-3 text-sm text-[#6b6f82] font-mono">{cat.slug}</td>
-                  <td className="px-4 py-3 text-sm text-[#6b6f82]">{cat._count.soundEffects}</td>
+                  <td className="px-4 py-3 text-sm text-[#6b6f82]">{cat._count.audioAssets}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => startEdit(cat)} className="text-xs text-accent-bright hover:underline">Edit</button>

@@ -1,11 +1,11 @@
 // src/lib/store/cart.store.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CartItem, LicenseType, SoundEffect } from '@/types';
+import type { CartItem, LicenseType, AudioAsset } from '@/types';
 
 interface CartState {
   items: CartItem[];
-  addItem: (sound: SoundEffect, licenseType: LicenseType) => void;
+  addItem: (sound: AudioAsset, licenseType: LicenseType) => void;
   removeItem: (soundId: string) => void;
   updateLicense: (soundId: string, licenseType: LicenseType) => void;
   clearCart: () => void;

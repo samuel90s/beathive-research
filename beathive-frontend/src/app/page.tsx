@@ -5,7 +5,7 @@ interface Category {
   name: string;
   slug: string;
   icon?: string;
-  _count: { soundEffects: number };
+  _count: { audioAssets: number };
 }
 
 async function getCategories(): Promise<Category[]> {
@@ -181,7 +181,7 @@ export default async function HomePage() {
                 <span className="text-2xl">{cat.icon || '🎵'}</span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-[#c4c6d8] group-hover:text-white transition-colors truncate">{cat.name}</p>
-                  <p className="text-xs text-[#5a5d72] mt-0.5">{cat._count.soundEffects} sounds</p>
+                  <p className="text-xs text-[#5a5d72] mt-0.5">{cat._count.audioAssets} sounds</p>
                 </div>
               </Link>
             ))}

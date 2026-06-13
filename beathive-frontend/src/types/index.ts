@@ -69,8 +69,9 @@ export interface Author {
   bio?: string;
 }
 
-export interface SoundEffect {
+export interface AudioAsset {
   id: string;
+  assetType?: 'SFX' | 'MUSIC';
   title: string;
   slug: string;
   description?: string;
@@ -126,7 +127,7 @@ export interface WishlistToggleResult {
 export interface Order {
   id: string;
   totalAmount: number;
-  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
   paidAt?: string;
   createdAt: string;
   items: OrderItem[];
@@ -138,7 +139,7 @@ export interface OrderItem {
   priceSnapshot: number;
   licenseType: string;
   licensePdfUrl?: string;
-  soundEffect: SoundEffect;
+  audioAsset: AudioAsset;
 }
 
 export interface Invoice {
@@ -149,7 +150,7 @@ export interface Invoice {
 }
 
 export interface SoundsResponse {
-  items: SoundEffect[];
+  items: AudioAsset[];
   pagination: {
     total: number;
     page: number;
@@ -184,7 +185,7 @@ export interface SoundFilters {
 export type LicenseType = 'personal' | 'commercial' | 'sync' | 'broadcast';
 
 export interface CartItem {
-  sound: SoundEffect;
+  sound: AudioAsset;
   licenseType: LicenseType;
 }
 

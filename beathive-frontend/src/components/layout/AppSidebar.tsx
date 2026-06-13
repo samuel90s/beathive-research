@@ -109,7 +109,7 @@ function AppSidebarInner() {
         <div>
           <SectionLabel collapsed={collapsed}>Browse</SectionLabel>
           <div className="space-y-0.5">
-            <BrowseTypeItem type="" label="Semua Sound" collapsed={collapsed}
+            <BrowseTypeItem type="" label="All Sounds" collapsed={collapsed}
               icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>} />
             <BrowseTypeItem type="sfx" label="Sound Effects" collapsed={collapsed}
               icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>} />
@@ -122,11 +122,11 @@ function AppSidebarInner() {
         {isAuthenticated && (
           <>
             <div>
-              <SectionLabel collapsed={collapsed}>Akun</SectionLabel>
+              <SectionLabel collapsed={collapsed}>Account</SectionLabel>
               <div className="space-y-0.5">
                 <NavItem href="/dashboard/downloads" label="Download History" collapsed={collapsed}
                   icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>} />
-                <NavItem href="/dashboard/orders" label="Pesanan" collapsed={collapsed}
+                <NavItem href="/dashboard/orders" label="Orders" collapsed={collapsed}
                   icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>} />
               </div>
             </div>
@@ -144,21 +144,21 @@ function AppSidebarInner() {
         {/* Not logged in */}
         {!isAuthenticated && !collapsed && (
           <div className="border-t border-[#1a1b2e] pt-4 px-1 space-y-2">
-            <p className="text-xs text-[#3a3c4e] px-2">Login untuk download & simpan favorit</p>
+            <p className="text-xs text-[#3a3c4e] px-2">Log in to download and save favorites</p>
             <Link href="/auth/login"
               className="block w-full text-center py-2 text-sm border border-[#2a2c3e] rounded-lg text-[#6b6f82] hover:text-white hover:border-white/10 transition-all">
-              Masuk
+              Log In
             </Link>
             <Link href="/auth/register"
               className="block w-full text-center py-2 text-sm font-semibold bg-accent hover:bg-accent-dim rounded-lg text-white transition-colors">
-              Daftar Gratis
+              Sign Up Free
             </Link>
           </div>
         )}
 
         {!isAuthenticated && collapsed && (
           <div className="flex flex-col items-center gap-2 pt-2">
-            <Link href="/auth/login" title="Masuk"
+            <Link href="/auth/login" title="Log In"
               className="w-9 h-9 rounded-lg border border-[#2a2c3e] flex items-center justify-center text-[#6b6f82] hover:text-white transition-all">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>

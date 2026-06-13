@@ -15,7 +15,7 @@ const midtransClient = require('midtrans-client');
 
 export interface CreateOrderDto {
   items: {
-    soundEffectId: string;
+    audioAssetId: string;
     licenseType: 'personal' | 'commercial' | 'sync' | 'broadcast';
   }[];
 }
@@ -41,9 +41,9 @@ export class OrdersService {
 
   async createOrder(userId: string, dto: CreateOrderDto) {
     // 1. Ambil data semua sound yang dipesan
-    const sounds = await this.prisma.soundEffect.findMany({
+    const sounds = await this.prisma.audioAsset.findMany({
       where: {
-        id: { in: dto.items.map((i) => i.soundEffectId) },
+        id: { in: dto.items.map((i) => i.audioAssetId) },
         isPublished: true,
       },
     });
@@ -71,7 +71,7 @@ export class OrdersService {
 
     // 2. Hitung total (harga lisensi commercial = 2x personal)
     const itemsWithPrice = dto.items.map((item) => {
-      const sound = sounds.find((s) => s.id === item.soundEffectId)!;
+      const sound = sounds.find((s) => s.id === item.audioAssetId)!;
       const price =
         item.licenseType === 'commercial' || item.licenseType === 'sync'
           ? sound.price * 2
@@ -105,7 +105,7 @@ export class OrdersService {
       for (const item of dto.items) {
         const existing = await tx.orderItem.findFirst({
           where: {
-            soundEffectId: item.soundEffectId,
+            audioAssetId: item.audioAssetId,
             licenseType: item.licenseType,
             order: { userId, status: 'PAID' },
           },
@@ -124,7 +124,7 @@ export class OrdersService {
           status: 'PENDING',
           items: {
             create: itemsWithPrice.map((item) => ({
-              soundEffectId: item.soundEffectId,
+              audioAssetId: item.audioAssetId,
               priceSnapshot: item.price,
               licenseType: item.licenseType,
             })),
@@ -173,7 +173,7 @@ export class OrdersService {
       where: { userId },
       include: {
         items: {
-          include: { soundEffect: true },
+          include: { audioAsset: true },
         },
         invoice: true,
       },
@@ -188,7 +188,7 @@ export class OrdersService {
       where: { id: orderId, userId },
       include: {
         items: {
-          include: { soundEffect: { select: { id: true, title: true, slug: true } } },
+          include: { audioAsset: { select: { id: true, title: true, slug: true } } },
         },
       },
     });
@@ -210,8 +210,8 @@ export class OrdersService {
       tax,
       grandTotal: order.totalAmount,
       items: order.items.map((i) => ({
-        title: i.soundEffect.title,
-        slug: i.soundEffect.slug,
+        title: i.audioAsset.title,
+        slug: i.audioAsset.slug,
         licenseType: i.licenseType,
         price: i.priceSnapshot,
       })),
@@ -224,7 +224,7 @@ export class OrdersService {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, userId },
       include: {
-        items: { include: { soundEffect: { select: { id: true, title: true, slug: true, format: true } } } },
+        items: { include: { audioAsset: { select: { id: true, title: true, slug: true, format: true } } } },
         invoice: true,
         user: { select: { name: true, email: true } },
       },
@@ -239,10 +239,10 @@ export class OrdersService {
       paidAt: order.paidAt,
       customer: { name: order.user.name, email: order.user.email },
       items: order.items.map((i) => ({
-        title: i.soundEffect.title,
-        soundId: i.soundEffectId,
-        slug: (i.soundEffect as any).slug ?? null,
-        format: (i.soundEffect as any).format ?? 'wav',
+        title: i.audioAsset.title,
+        soundId: i.audioAssetId,
+        slug: (i.audioAsset as any).slug ?? null,
+        format: (i.audioAsset as any).format ?? 'wav',
         licenseType: i.licenseType,
         price: i.priceSnapshot,
       })),
@@ -401,7 +401,7 @@ export class OrdersService {
       include: {
         items: {
           include: {
-            soundEffect: {
+            audioAsset: {
               include: { author: { select: { id: true, name: true, email: true } } },
             },
           },
@@ -411,13 +411,13 @@ export class OrdersService {
     if (!order) return;
 
     for (const item of order.items) {
-      const author = (item.soundEffect as any).author;
+      const author = (item.audioAsset as any).author;
       if (!author?.email) continue;
       const creatorEarning = Math.round(item.priceSnapshot * 0.7);
       await this.email.sendSoundSold(
         author.email,
         author.name,
-        item.soundEffect.title,
+        item.audioAsset.title,
         creatorEarning,
         item.licenseType,
       ).catch(() => {});
@@ -446,7 +446,7 @@ export class OrdersService {
   async getSnapToken(userId: string, orderId: string) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, userId },
-      include: { items: { include: { soundEffect: true } } },
+      include: { items: { include: { audioAsset: true } } },
     });
     if (!order) throw new NotFoundException('Order not found');
     if (order.status !== 'PENDING') {
@@ -458,10 +458,10 @@ export class OrdersService {
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     const itemsWithPrice = order.items.map((i) => ({
-      soundEffectId: i.soundEffectId,
+      audioAssetId: i.audioAssetId,
       price: i.priceSnapshot,
       licenseType: i.licenseType,
-      sound: i.soundEffect,
+      sound: i.audioAsset,
     }));
     const snapToken = await this.createMidtransToken(order, user, itemsWithPrice);
     await this.prisma.order.update({ where: { id: orderId }, data: { snapToken } });
@@ -486,7 +486,7 @@ export class OrdersService {
       },
       item_details: [
         ...items.map((item) => ({
-          id: item.soundEffectId,
+          id: item.audioAssetId,
           price: item.price,
           quantity: 1,
           name: `${item.sound.title} (${item.licenseType})`.slice(0, 50),

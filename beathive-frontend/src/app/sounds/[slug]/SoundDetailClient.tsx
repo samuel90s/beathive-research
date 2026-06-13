@@ -16,17 +16,17 @@ import { toast } from '@/lib/store/toast.store';
 import WaveformBar from '@/components/sounds/WaveformBar';
 import RatingSection from '@/components/sounds/RatingSection';
 import SoundRow from '@/components/sounds/SoundRow';
-import type { SoundEffect } from '@/types';
+import type { AudioAsset } from '@/types';
 
 export default function SoundDetailClient({ slug }: { slug: string }) {
   const router = useRouter();
 
-  const [sound, setSound] = useState<SoundEffect | null>(null);
+  const [sound, setSound] = useState<AudioAsset | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [liked, setLiked] = useState(false);
   const [buyNowOpen, setBuyNowOpen] = useState(false);
-  const [relatedSounds, setRelatedSounds] = useState<SoundEffect[]>([]);
+  const [relatedSounds, setRelatedSounds] = useState<AudioAsset[]>([]);
 
   const { currentTrack, isPlaying, play, pause } = usePlayerStore();
   const progress = usePlayerStore(s => s.progress);
@@ -125,6 +125,12 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
     sound.accessLevel === 'FREE' ||
     ((sound.accessLevel === 'PRO' || sound.accessLevel === 'BUSINESS') && isSubActive && planSlug === 'pro')
   );
+  const isMusic = sound.assetType === 'MUSIC' || sound.category?.type === 'music';
+  const musicBpm = sound.bpm ?? sound.musicMetadata?.bpm;
+  const musicMood = sound.mood ?? sound.musicMetadata?.mood;
+  const musicKey = sound.musicalKey ?? sound.musicMetadata?.musicalKey;
+  const hasStems = sound.hasStems ?? sound.musicMetadata?.hasStems;
+  const musicGenres = sound.genres ?? [];
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return null;
@@ -235,31 +241,35 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
         )}
 
         {/* Music metadata */}
-        {(sound.bpm || sound.mood || sound.musicalKey || sound.hasStems) && (
+        {isMusic && (musicBpm || musicMood || musicKey || hasStems || musicGenres.length > 0) && (
           <div className="flex flex-wrap gap-2 mb-5">
-            {sound.bpm && (
-              <span className="text-xs px-2.5 py-1 rounded-full bg-accent/10 text-accent-bright border border-accent/20 font-medium">
-                ♩ {sound.bpm} BPM
+            {musicMood && (
+              <span className="text-xs px-2.5 py-1 rounded-full bg-teal/10 text-teal border border-teal/20 font-medium capitalize">
+                Mood: {musicMood}
               </span>
             )}
-            {sound.musicalKey && (
-              <span className="text-xs px-2.5 py-1 rounded-full bg-teal/10 text-teal border border-teal/20 font-medium">
-                🎵 {sound.musicalKey}
+            {musicGenres.slice(0, 3).map((genre) => (
+              <span key={genre.id ?? genre.slug} className="text-xs px-2.5 py-1 rounded-full bg-accent/10 text-accent-bright border border-accent/20 font-medium">
+                Genre: {genre.name}
+              </span>
+            ))}
+            {musicBpm && (
+              <span className="text-xs px-2.5 py-1 rounded-full bg-white/[0.05] text-[#c4c6d8] border border-white/[0.08] font-medium">
+                BPM: {musicBpm}
               </span>
             )}
-            {sound.mood && (
-              <span className="text-xs px-2.5 py-1 rounded-full bg-teal/10 text-teal border-teal/20 font-medium capitalize">
-                {sound.mood}
+            {musicKey && (
+              <span className="text-xs px-2.5 py-1 rounded-full bg-white/[0.05] text-[#c4c6d8] border border-white/[0.08] font-medium">
+                Key: {musicKey}
               </span>
             )}
-            {sound.hasStems && (
+            {hasStems && (
               <span className="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
                 Stems Included
               </span>
             )}
           </div>
         )}
-
         {/* File size */}
         {sound.fileSize && (
           <p className="text-xs text-[#6b6f82] mb-4">File size: {formatFileSize(sound.fileSize)}</p>
@@ -382,7 +392,7 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
 // ─── CTA component ────────────────────────────────────────
 
 interface CTAProps {
-  sound: SoundEffect;
+  sound: AudioAsset;
   user: import('@/types').User | null;
   inCart: boolean;
   isAuthenticated: boolean;
@@ -510,7 +520,7 @@ function DownloadCTA({ sound, user, inCart, isAuthenticated, downloading, onDown
 // ─── Buy Now modal ─────────────────────────────────────────
 
 function BuyNowModal({ sound, onClose, onPaid }: {
-  sound: SoundEffect;
+  sound: AudioAsset;
   onClose: () => void;
   onPaid: (orderId: string) => void;
 }) {

@@ -124,72 +124,57 @@ export default function DownloadsPage() {
   return (
     <div className="px-8 py-8 pb-28">
 
-      {/* Page header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Download History</h1>
-        <p className="text-sm text-[#5a5d72] mt-1">Semua sound yang pernah kamu download beserta lisensinya</p>
-      </div>
+      {/* Header + filters in one row */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+        <h1 className="text-lg font-bold text-white flex-shrink-0">Download History</h1>
 
-      {/* Source tabs */}
-      <div className="flex gap-1 border-b border-rim mb-5">
-        {SOURCE_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => { setSourceFilter(opt.value); setPage(1); }}
-            className={clsx(
-              'px-4 py-2.5 text-sm transition-all duration-150 border-b-2 -mb-px',
-              sourceFilter === opt.value
-                ? 'text-white border-accent font-medium'
-                : 'text-[#6b6f82] border-transparent hover:text-[#c4c6d8]',
-            )}
+        <div className="flex items-center gap-2 flex-1 sm:justify-end flex-wrap">
+          {/* Search */}
+          <div className="relative min-w-[160px] max-w-[220px]">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#3a3c4e]" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
+              placeholder="Cari sound..."
+              className="w-full pl-8 pr-3 py-1.5 input-dark rounded-lg text-xs"
+            />
+          </div>
+
+          {/* Source filter */}
+          <select
+            value={sourceFilter}
+            onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }}
+            className="px-2.5 py-1.5 input-dark rounded-lg text-xs text-[#c4c6d8] cursor-pointer"
           >
-            {opt.label}
-            {opt.value === 'all' && data && (
-              <span className="ml-1.5 text-[11px] text-[#3a3c4e]">({data.pagination.total})</span>
-            )}
-          </button>
-        ))}
-      </div>
+            {SOURCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
 
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 mb-5">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3a3c4e]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
-            placeholder="Cari sound..."
-            className="w-full pl-9 pr-3 py-2 input-dark rounded-lg text-sm"
-          />
+          {/* License filter */}
+          <select
+            value={licenseFilter}
+            onChange={(e) => { setLicenseFilter(e.target.value); setPage(1); }}
+            className="px-2.5 py-1.5 input-dark rounded-lg text-xs text-[#c4c6d8] cursor-pointer"
+          >
+            {LICENSE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+
+          {hasFilters && (
+            <button onClick={resetFilters} className="text-[10px] text-accent-bright hover:underline">
+              Reset
+            </button>
+          )}
+
+          <span className="text-xs text-[#3a3c4e] tabular-nums">
+            {isLoading ? '...' : `${data?.pagination.total ?? 0}`}
+          </span>
         </div>
-
-        {/* License filter */}
-        <select
-          value={licenseFilter}
-          onChange={(e) => { setLicenseFilter(e.target.value); setPage(1); }}
-          className="px-3 py-2 input-dark rounded-lg text-sm text-[#c4c6d8] cursor-pointer"
-        >
-          {LICENSE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-
-        {hasFilters && (
-          <button
-            onClick={resetFilters}
-            className="text-xs text-accent-bright hover:underline"
-          >
-            Reset filter
-          </button>
-        )}
-
-        <span className="ml-auto text-sm text-[#3a3c4e]">
-          {isLoading ? '...' : `${data?.pagination.total ?? 0} download`}
-        </span>
       </div>
 
       {/* Loading skeleton */}

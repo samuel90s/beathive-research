@@ -131,172 +131,168 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="px-8 py-8 pb-28 max-w-3xl space-y-6">
-      <h1 className="text-xl font-semibold text-white">Edit Profile</h1>
+    <div className="px-6 lg:px-8 py-8 pb-28 max-w-6xl space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold text-white">Profile</h1>
+        <p className="text-sm text-[#6b6f82] mt-1">Manage your public profile, payout details, and security.</p>
+      </div>
 
-      {/* Avatar + basic info */}
-      <div className="card rounded-2xl p-6">
-        <h2 className="text-sm font-semibold text-[#c4c6d8] mb-5">Profile Information</h2>
-
-        {/* Avatar */}
-        <div className="flex items-center gap-5 mb-6">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
-              {avatarSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-2xl font-semibold text-accent-bright">{user.name?.[0]?.toUpperCase()}</span>
+      <form onSubmit={handleSaveProfile} className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-5">
+        <section className="card rounded-2xl p-5 border border-rim space-y-5">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-shrink-0">
+              <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center overflow-hidden border border-white/20">
+                {avatarSrc ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl font-semibold text-accent-bright">{user.name?.[0]?.toUpperCase()}</span>
+                )}
+              </div>
+              {uploadingAvatar && (
+                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" strokeOpacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/>
+                  </svg>
+                </div>
               )}
             </div>
-            {uploadingAvatar && (
-              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
-                <svg className="w-5 h-5 text-white animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" strokeOpacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/>
-                </svg>
-              </div>
-            )}
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-white">Account</h2>
+              <p className="text-xs text-[#6b6f82] truncate">{user.email}</p>
+              <button
+                type="button"
+                onClick={() => avatarRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="mt-2 px-3 py-1.5 text-xs font-medium border border-rim rounded-lg text-[#c4c6d8] hover:bg-white/[0.05] transition-colors disabled:opacity-50"
+              >
+                {uploadingAvatar ? 'Uploading...' : 'Change Photo'}
+              </button>
+              <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            </div>
           </div>
-          <div>
-            <button
-              type="button"
-              onClick={() => avatarRef.current?.click()}
-              disabled={uploadingAvatar}
-              className="px-4 py-2 text-sm font-medium border border-rim rounded-xl hover:bg-surface/[0.05] transition-colors disabled:opacity-50"
-            >
-              {uploadingAvatar ? 'Uploading...' : 'Change Photo'}
-            </button>
-            <p className="text-xs text-[#6b6f82] mt-1.5">JPG, PNG, or WebP · Max 5MB</p>
-            <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-          </div>
-        </div>
 
-        <form onSubmit={handleSaveProfile} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Display Name</label>
-            <input
-              type="text" value={name} onChange={(e) => setName(e.target.value)} required
-              className="w-full px-3 py-2.5 border border-rim rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Display Name</label>
+              <input
+                type="text" value={name} onChange={(e) => setName(e.target.value)} required
+                className="w-full px-3 py-2.5 input-dark rounded-xl text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Email</label>
+              <input
+                type="email" value={user.email} disabled
+                className="w-full px-3 py-2.5 border border-rim rounded-xl text-sm bg-surface/[0.03] text-[#6b6f82] cursor-not-allowed"
+              />
+            </div>
           </div>
+
           <div>
-            <label className="block text-xs font-medium text-[#8b8fa8] mb-1">
-              Bio <span className="text-[#6b6f82] font-normal">(optional)</span>
-            </label>
+            <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Bio</label>
             <textarea
               value={bio} onChange={(e) => setBio(e.target.value)} rows={3}
               placeholder="Tell people a bit about yourself..."
-              className="w-full px-3 py-2.5 border border-rim rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"
+              className="w-full px-3 py-2.5 input-dark rounded-xl text-sm resize-none"
             />
           </div>
+        </section>
+
+        <section className="card rounded-2xl p-5 border border-rim space-y-4">
           <div>
-            <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Email</label>
+            <h2 className="text-sm font-semibold text-white">Payout</h2>
+            <p className="text-xs text-[#6b6f82] mt-0.5">Used for creator withdrawals. Make sure it matches your bank records.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Bank</label>
+            <select
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              className="w-full px-3 py-2.5 input-dark rounded-xl text-sm bg-surface"
+            >
+              <option value="">Select bank...</option>
+              {BANKS.map((b) => (
+                <option key={b.code} value={b.code}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Account Number</label>
             <input
-              type="email" value={user.email} disabled
-              className="w-full px-3 py-2.5 border border-rim rounded-xl text-sm bg-surface/[0.03] text-[#6b6f82] cursor-not-allowed"
+              type="text" value={bankAccount}
+              onChange={(e) => setBankAccount(e.target.value)}
+              placeholder="e.g. 1234567890"
+              className="w-full px-3 py-2.5 input-dark rounded-xl text-sm"
             />
           </div>
 
-          {/* Payout Bank Account */}
-          <div className="border-t border-rim pt-4 space-y-3">
-            <div>
-              <p className="text-xs font-semibold text-[#c4c6d8] mb-0.5">Payout Bank Account</p>
-              <p className="text-xs text-[#6b6f82] mb-3">
-                Used for earnings withdrawal. Make sure the details are correct — payouts will be rejected if they don't match.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Bank</label>
-              <select
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                className="w-full px-3 py-2.5 border border-rim rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-surface"
-              >
-                <option value="">Select bank...</option>
-                {BANKS.map((b) => (
-                  <option key={b.code} value={b.code}>{b.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Account Number</label>
-              <input
-                type="text" value={bankAccount}
-                onChange={(e) => setBankAccount(e.target.value)}
-                placeholder="e.g. 1234567890"
-                className="w-full px-3 py-2.5 border border-rim rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Account Holder Name</label>
-              <input
-                type="text" value={bankAccountName}
-                onChange={(e) => setBankAccountName(e.target.value)}
-                placeholder="Full name as registered at the bank"
-                className="w-full px-3 py-2.5 border border-rim rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-              <p className="text-xs text-[#6b6f82] mt-1">
-                Must match your bank records exactly. Withdrawal will be rejected if it doesn't match.
-              </p>
-            </div>
+          <div>
+            <label className="block text-xs font-medium text-[#8b8fa8] mb-1">Account Holder</label>
+            <input
+              type="text" value={bankAccountName}
+              onChange={(e) => setBankAccountName(e.target.value)}
+              placeholder="Full name on bank account"
+              className="w-full px-3 py-2.5 input-dark rounded-xl text-sm"
+            />
           </div>
 
           {profileMsg && (
-            <p className={`text-xs px-3 py-2 rounded-lg ${profileMsg.type === 'ok' ? 'bg-teal/10 text-teal' : 'bg-red-500/10 text-red-400'}`}>
+            <p className={profileMsg.type === 'ok' ? 'text-xs px-3 py-2 rounded-lg bg-teal/10 text-teal' : 'text-xs px-3 py-2 rounded-lg bg-red-500/10 text-red-400'}>
               {profileMsg.text}
             </p>
           )}
+
           <button
             type="submit" disabled={savingProfile}
-            className="px-5 py-2.5 btn-accent text-sm font-medium rounded-xl hover:bg-accent-dim disabled:opacity-50 transition-colors"
+            className="w-full py-2.5 btn-accent text-sm font-medium rounded-xl disabled:opacity-50 transition-colors"
           >
             {savingProfile ? 'Saving...' : 'Save Changes'}
           </button>
-        </form>
-      </div>
+        </section>
+      </form>
 
-      {/* Change password */}
-      <div className="card rounded-2xl p-6">
-        <h2 className="text-sm font-semibold text-[#c4c6d8] mb-5">Change Password</h2>
-        {user.provider === 'google' ? (
-          <p className="text-sm text-[#6b6f82]">Your account uses Google login — password change is not available.</p>
-        ) : (
-          <form onSubmit={handleChangePassword} className="space-y-4">
-            {[
-              { label: 'Current Password', value: currentPw, onChange: setCurrentPw },
-              { label: 'New Password', value: newPw, onChange: setNewPw },
-              { label: 'Confirm New Password', value: confirmPw, onChange: setConfirmPw },
-            ].map(({ label, value, onChange }) => (
-              <div key={label}>
-                <label className="block text-xs font-medium text-[#8b8fa8] mb-1">{label}</label>
-                <input
-                  type="password" value={value}
-                  onChange={(e) => onChange(e.target.value)}
-                  required placeholder="••••••••"
-                  className="w-full px-3 py-2.5 border border-rim rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-            ))}
-            {pwMsg && (
-              <p className={`text-xs px-3 py-2 rounded-lg ${pwMsg.type === 'ok' ? 'bg-teal/10 text-teal' : 'bg-red-500/10 text-red-400'}`}>
-                {pwMsg.text}
-              </p>
-            )}
-            <button
-              type="submit" disabled={savingPw}
-              className="px-5 py-2.5 btn-accent text-sm font-medium rounded-xl hover:bg-accent-dim disabled:opacity-50 transition-colors"
-            >
-              {savingPw ? 'Updating...' : 'Update Password'}
-            </button>
-          </form>
-        )}
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <section className="card rounded-2xl p-5 border border-rim">
+          <h2 className="text-sm font-semibold text-white mb-4">Password</h2>
+          {user.provider === 'google' ? (
+            <p className="text-sm text-[#6b6f82]">This account uses Google login. Password changes are not available.</p>
+          ) : (
+            <form onSubmit={handleChangePassword} className="space-y-3">
+              {[
+                { label: 'Current Password', value: currentPw, onChange: setCurrentPw },
+                { label: 'New Password', value: newPw, onChange: setNewPw },
+                { label: 'Confirm Password', value: confirmPw, onChange: setConfirmPw },
+              ].map(({ label, value, onChange }) => (
+                <div key={label}>
+                  <label className="block text-xs font-medium text-[#8b8fa8] mb-1">{label}</label>
+                  <input
+                    type="password" value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    required placeholder="Password"
+                    className="w-full px-3 py-2.5 input-dark rounded-xl text-sm"
+                  />
+                </div>
+              ))}
+              {pwMsg && (
+                <p className={pwMsg.type === 'ok' ? 'text-xs px-3 py-2 rounded-lg bg-teal/10 text-teal' : 'text-xs px-3 py-2 rounded-lg bg-red-500/10 text-red-400'}>
+                  {pwMsg.text}
+                </p>
+              )}
+              <button
+                type="submit" disabled={savingPw}
+                className="w-full py-2.5 btn-accent text-sm font-medium rounded-xl disabled:opacity-50 transition-colors"
+              >
+                {savingPw ? 'Updating...' : 'Update Password'}
+              </button>
+            </form>
+          )}
+        </section>
 
-      {/* 2FA Section */}
-      <TwoFactorSection isTwoFactorEnabled={!!user.isTwoFactorEnabled} />
+        <TwoFactorSection isTwoFactorEnabled={!!user.isTwoFactorEnabled} />
+      </div>
     </div>
   );
 }
@@ -363,11 +359,11 @@ function TwoFactorSection({ isTwoFactorEnabled }: { isTwoFactorEnabled: boolean 
   };
 
   return (
-    <div className="card rounded-2xl p-6">
+    <section className="card rounded-2xl p-5 border border-rim">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-base font-semibold text-white">Two-Factor Authentication</h2>
-          <p className="text-sm text-[#6b6f82] mt-0.5">Add an extra layer of security to your account.</p>
+          <h2 className="text-sm font-semibold text-white">Two-Factor Authentication</h2>
+          <p className="text-xs text-[#6b6f82] mt-0.5">Add an extra layer of security.</p>
         </div>
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${enabled ? 'bg-teal/10 text-teal' : 'bg-surface/[0.05] text-[#6b6f82]'}`}>
           {enabled ? 'Enabled' : 'Disabled'}
@@ -384,7 +380,7 @@ function TwoFactorSection({ isTwoFactorEnabled }: { isTwoFactorEnabled: boolean 
         <button
           onClick={startSetup}
           disabled={loading}
-          className="px-5 py-2.5 btn-accent text-sm font-medium rounded-xl hover:bg-accent-dim disabled:opacity-50 transition-colors"
+          className="w-full py-2.5 btn-accent text-sm font-medium rounded-xl disabled:opacity-50 transition-colors"
         >
           {loading ? 'Loading...' : 'Enable 2FA'}
         </button>
@@ -392,8 +388,8 @@ function TwoFactorSection({ isTwoFactorEnabled }: { isTwoFactorEnabled: boolean 
 
       {step === 'setup' && qrCode && (
         <div className="space-y-4">
-          <p className="text-sm text-[#8b8fa8]">Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):</p>
-          <img src={qrCode} alt="2FA QR Code" className="w-48 h-48 border border-rim rounded-xl" />
+          <p className="text-sm text-[#8b8fa8]">Scan this QR code with your authenticator app.</p>
+          <img src={qrCode} alt="2FA QR Code" className="w-40 h-40 border border-rim rounded-xl" />
           {secret && (
             <div className="bg-surface/[0.03] rounded-xl px-3 py-2">
               <p className="text-xs text-[#6b6f82] mb-0.5">Or enter manually:</p>
@@ -460,6 +456,6 @@ function TwoFactorSection({ isTwoFactorEnabled }: { isTwoFactorEnabled: boolean 
           </div>
         </form>
       )}
-    </div>
+    </section>
   );
 }

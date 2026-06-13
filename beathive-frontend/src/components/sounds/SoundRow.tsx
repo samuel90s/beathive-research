@@ -9,11 +9,11 @@ import { useDownload } from '@/lib/hooks/useDownload';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { formatDuration } from '@/lib/utils';
 import { toast } from '@/lib/store/toast.store';
-import type { SoundEffect } from '@/types';
+import type { AudioAsset } from '@/types';
 import WaveformBar from './WaveformBar';
 import clsx from 'clsx';
 
-interface Props { sound: SoundEffect }
+interface Props { sound: AudioAsset }
 
 const CAT_COLORS: Record<string, string> = {
   'foley':            'from-carmine to-accent',
@@ -72,6 +72,10 @@ function SoundRow({ sound }: Props) {
   const inCart = hasItem(sound.id);
   const wishlistLoading = loadingId === sound.id;
   const isOwner = !!(user?.id && sound.author?.id && sound.author.id === user.id);
+  const isMusic = sound.assetType === 'MUSIC' || sound.category?.type === 'music';
+  const musicMood = sound.mood ?? sound.musicMetadata?.mood;
+  const musicGenre = sound.genres?.[0]?.name;
+  const hasStems = sound.hasStems ?? sound.musicMetadata?.hasStems;
 
   const togglePlay = () => {
     if (isActive) isCurrentlyPlaying ? pause() : usePlayerStore.getState().resume();
@@ -172,10 +176,24 @@ function SoundRow({ sound }: Props) {
             </span>
           )}
         </div>
-        <p className="text-xs text-[#5a5d72] truncate mt-0.5">
-          {sound.category.name}
-          {sound.tags?.slice(0, 1).map((t) => ` · ${t.name}`)}
-        </p>
+        <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+          <span className="text-xs text-[#5a5d72] truncate">{sound.category.name}</span>
+          {isMusic && musicMood && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal/10 text-teal border border-teal/20 capitalize flex-shrink-0">
+              {musicMood}
+            </span>
+          )}
+          {isMusic && musicGenre && (
+            <span className="hidden md:inline-flex text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent-bright border border-accent/20 flex-shrink-0">
+              {musicGenre}
+            </span>
+          )}
+          {isMusic && hasStems && (
+            <span className="hidden md:inline-flex text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-[#8b8fa8] border border-white/[0.06] flex-shrink-0">
+              Stems
+            </span>
+          )}
+        </div>
         <p className="text-[10px] text-[#3a3c4e] mt-0.5 tabular-nums">
           {sound.playCount.toLocaleString()} plays · {sound.downloadCount.toLocaleString()} dl
         </p>

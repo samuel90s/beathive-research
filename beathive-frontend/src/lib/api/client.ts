@@ -5,7 +5,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1
 
 export const apiClient = axios.create({
   baseURL: API_URL,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    // Identifikasi request dari frontend resmi (bukan peretas via Postman langsung)
+    'X-Requested-With': 'XMLHttpRequest',
+  },
+  // Timeout 30 detik — cegah hanging requests
+  timeout: 30_000,
 });
 
 function getToken(key: 'accessToken' | 'refreshToken'): string | null {
@@ -33,9 +39,32 @@ function updateStoredTokens(accessToken: string, refreshToken: string) {
   } catch { /* ignore */ }
 }
 
+/**
+ * Sanitasi semua string field dalam object secara rekursif.
+ * Menghapus karakter berbahaya XSS sebelum data dikirim ke server.
+ * Note: server juga melakukan sanitasi — ini defence-in-depth.
+ */
+function sanitizeRequestData(data: unknown): unknown {
+  if (typeof data === 'string') {
+    // Hapus karakter HTML berbahaya
+    return data.replace(/[<>]/g, '').trim();
+  }
+  if (Array.isArray(data)) {
+    return data.map(sanitizeRequestData);
+  }
+  if (data !== null && typeof data === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      // Jangan sanitasi password, token, dan field sensitif
+      const skipSanitize = ['password', 'currentPassword', 'newPassword', 'token', 'refreshToken', 'accessToken', 'code'];
+      result[key] = skipSanitize.includes(key) ? value : sanitizeRequestData(value);
+    }
+    return result;
+  }
+  return data;
+}
+
 // FE-01: Mutex to prevent concurrent /auth/refresh calls.
-// When multiple 401s fire simultaneously (e.g. after a 15m access token expires),
-// only the first triggers a refresh; the rest queue up and reuse the same new token.
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
 
@@ -44,10 +73,16 @@ function flushQueue(error: unknown, token: string | null = null) {
   failedQueue = [];
 }
 
-// Request interceptor — inject access token
+// Request interceptor — inject access token + sanitasi data
 apiClient.interceptors.request.use((config) => {
   const token = getToken('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  // Sanitasi JSON body (bukan FormData — multipart tidak disanitasi di sini)
+  if (config.data && !(config.data instanceof FormData) && typeof config.data === 'object') {
+    config.data = sanitizeRequestData(config.data);
+  }
+
   return config;
 });
 
@@ -93,8 +128,6 @@ apiClient.interceptors.response.use(
       sessionStorage.removeItem('accessToken');
       sessionStorage.removeItem('refreshToken');
       sessionStorage.removeItem('beathive-auth');
-      // Also clear Zustand store so isAuthenticated = false immediately,
-      // preventing any in-flight renders from seeing stale auth state.
       try {
         const { useAuthStore } = await import('@/lib/store/auth.store');
         useAuthStore.getState().logout();
@@ -106,3 +139,4 @@ apiClient.interceptors.response.use(
     }
   },
 );
+

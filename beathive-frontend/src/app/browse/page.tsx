@@ -394,10 +394,11 @@ function CategoryCard({ cat, onClick }: {
 
 // ─── Category Landing (no category selected) ─────────────────────────────────
 
-function CategoryLanding({ soundType, onCategoryClick, onSubcatClick }: {
+function CategoryLanding({ soundType, onCategoryClick, onSubcatClick, onMoodClick }: {
   soundType: string;
   onCategoryClick: (slug: string) => void;
   onSubcatClick: (catSlug: string, subcat: string) => void;
+  onMoodClick: (mood: string) => void;
 }) {
   const allCats = soundType === 'music' ? MUSIC_CATS : soundType === 'sfx' ? SFX_CATS : [...SFX_CATS, ...MUSIC_CATS];
 
@@ -449,6 +450,23 @@ function CategoryLanding({ soundType, onCategoryClick, onSubcatClick }: {
               <CategoryCard key={cat.slug} cat={cat} onClick={() => onCategoryClick(cat.slug)} />
             ))}
           </div>
+          <div className="mt-4 rounded-2xl border border-[#1e2030] bg-[#0d0e18] p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <h3 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Mood Musik</h3>
+              <div className="flex-1 h-px bg-[#1e2030]" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {MUSIC_MOODS.filter(m => m.value).map(mood => (
+                <button
+                  key={mood.value}
+                  onClick={() => onMoodClick(mood.value)}
+                  className="px-3 py-1.5 rounded-full border border-teal/20 bg-teal/10 text-teal text-xs font-medium capitalize hover:bg-teal/15 hover:border-teal/40 transition-colors"
+                >
+                  {mood.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </section>
       )}
 
@@ -499,8 +517,8 @@ function SoundList({ category, filters, onBack }: {
 }) {
   const [sort, setSort] = useState('newest');
   const [access, setAccess] = useState('');
-  const [genre, setGenre] = useState('');
-  const [mood, setMood] = useState('');
+  const [genre, setGenre] = useState(filters.genreSlug ?? '');
+  const [mood, setMood] = useState(filters.mood ?? '');
   const [searchInput, setSearchInput] = useState('');
   const [subcat, setSubcat] = useState(filters.search ?? '');
   const [page, setPage] = useState(filters.page ?? 1);
@@ -509,10 +527,10 @@ function SoundList({ category, filters, onBack }: {
   useEffect(() => {
     setSubcat(filters.search ?? '');
     setSearchInput('');
-    setGenre('');
-    setMood('');
+    setGenre(filters.genreSlug ?? '');
+    setMood(filters.mood ?? '');
     setPage(1);
-  }, [filters.categorySlug, filters.search, filters.soundType]);
+  }, [filters.categorySlug, filters.genreSlug, filters.mood, filters.search, filters.soundType]);
 
   useEffect(() => {
     setPage(1);
@@ -543,7 +561,7 @@ function SoundList({ category, filters, onBack }: {
             Browse
           </button>
           <span className="text-[#2a2c3e]">/</span>
-          <span className="text-white font-medium">{category?.name ?? 'Sounds'}</span>
+          <span className="text-white font-medium">{category?.name ?? (filters.soundType === 'music' ? 'Music' : 'Sounds')}</span>
           {isFetching && !isLoading && <span className="text-accent-bright text-xs ml-auto">Memuat...</span>}
           {!isFetching && data && <span className="text-[#3a3c4e] text-xs ml-auto">{data.pagination.total} sounds</span>}
         </div>
@@ -692,15 +710,21 @@ function BrowseContent() {
   const [categorySlug, setCategorySlug] = useState(searchParams.get('categorySlug') ?? '');
   const [soundType, setSoundType] = useState(searchParams.get('soundType') ?? '');
   const [urlSearch, setUrlSearch] = useState(searchParams.get('search') ?? '');
+  const [urlMood, setUrlMood] = useState(searchParams.get('mood') ?? '');
+  const [urlGenre, setUrlGenre] = useState(searchParams.get('genreSlug') ?? '');
 
   // Sync with URL
   useEffect(() => {
     const cat = searchParams.get('categorySlug') ?? '';
     const type = searchParams.get('soundType') ?? '';
     const search = searchParams.get('search') ?? '';
+    const mood = searchParams.get('mood') ?? '';
+    const genreSlug = searchParams.get('genreSlug') ?? '';
     setCategorySlug(cat);
     setSoundType(type);
     setUrlSearch(search);
+    setUrlMood(mood);
+    setUrlGenre(genreSlug);
   }, [searchParams]);
 
   const updateUrl = (params: Record<string, string>) => {
@@ -713,7 +737,8 @@ function BrowseContent() {
     if (!slug) {
       updateUrl({ soundType });
     } else {
-      updateUrl({ categorySlug: slug });
+      const nextType = MUSIC_CATS.some(c => c.slug === slug) ? 'music' : 'sfx';
+      updateUrl({ categorySlug: slug, soundType: nextType });
     }
   };
 
@@ -725,6 +750,10 @@ function BrowseContent() {
     }
   };
 
+  const handleMoodClick = (mood: string) => {
+    updateUrl({ soundType: 'music', mood });
+  };
+
   const allCats = useMemo(() => [...SFX_CATS, ...MUSIC_CATS], []);
   const activeCategory = categorySlug ? allCats.find(c => c.slug === categorySlug) ?? null : null;
 
@@ -732,12 +761,14 @@ function BrowseContent() {
     categorySlug: categorySlug || undefined,
     soundType: soundType || undefined,
     search: urlSearch || undefined,
+    mood: urlMood || undefined,
+    genreSlug: urlGenre || undefined,
     sortBy: 'newest',
     page: 1,
     limit: 30,
-  }), [categorySlug, soundType, urlSearch]);
+  }), [categorySlug, soundType, urlGenre, urlMood, urlSearch]);
 
-  if (activeCategory || (categorySlug && !activeCategory)) {
+  if (activeCategory || (categorySlug && !activeCategory) || urlMood || urlGenre || urlSearch) {
     return (
       <SoundList
         category={activeCategory}
@@ -752,6 +783,7 @@ function BrowseContent() {
       soundType={soundType}
       onCategoryClick={handleCategoryClick}
       onSubcatClick={handleSubcatClick}
+      onMoodClick={handleMoodClick}
     />
   );
 }

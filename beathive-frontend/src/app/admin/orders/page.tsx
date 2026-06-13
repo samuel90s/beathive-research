@@ -11,7 +11,7 @@ interface Order {
   createdAt: string;
   paidAt?: string;
   user: { name: string; email: string };
-  items: { soundEffect: { title: string }; licenseType: string }[];
+  items: { audioAsset: { title: string }; licenseType: string }[];
   invoice?: { invoiceNumber: string } | null;
 }
 
@@ -70,7 +70,7 @@ export default function AdminOrdersPage() {
                   <td className="px-4 py-3">
                     {o.items.map((item, i) => (
                       <p key={i} className="text-xs text-[#8b8fa8] truncate max-w-[180px]">
-                        {item.soundEffect.title}
+                        {item.audioAsset.title}
                         <span className="text-[#6b6f82]"> ({item.licenseType})</span>
                       </p>
                     ))}

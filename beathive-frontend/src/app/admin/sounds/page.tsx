@@ -25,7 +25,7 @@ interface Sound {
   createdAt: string;
   waveformData?: number[];
   category: { name: string; icon?: string };
-  author?: { id: string; name: string; email: string; createdAt: string; _count?: { uploadedSounds: number } } | null;
+  author?: { id: string; name: string; email: string; createdAt: string; _count?: { uploadedAssets: number } } | null;
   tags?: { tag: { name: string; slug: string } }[];
   _count?: { downloads: number; ratings: number };
 }
@@ -290,7 +290,7 @@ function DetailPanel({
                 <p className="text-sm font-medium text-white">{sound.author.name}</p>
                 <p className="text-xs text-[#6b6f82] truncate">{sound.author.email}</p>
                 <p className="text-[10px] text-[#5a5d72] mt-0.5">
-                  {sound.author._count?.uploadedSounds ?? '?'} uploads · Bergabung {formatDate(sound.author.createdAt)}
+                  {sound.author._count?.uploadedAssets ?? '?'} uploads · Bergabung {formatDate(sound.author.createdAt)}
                 </p>
               </div>
             </div>
@@ -481,10 +481,13 @@ export default function AdminSoundsPage() {
             </div>
           ) : (
             sounds.map(s => (
-              <button
+              <div
                 key={s.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelected(prev => prev?.id === s.id ? null : s)}
-                className={`w-full text-left card rounded-xl border p-3.5 transition-all ${
+                onKeyDown={e => e.key === 'Enter' && setSelected(prev => prev?.id === s.id ? null : s)}
+                className={`w-full text-left card rounded-xl border p-3.5 transition-all cursor-pointer ${
                   selected?.id === s.id
                     ? 'border-accent/50 bg-accent/5'
                     : 'border-rim hover:border-white/10 hover:bg-white/[0.02]'
@@ -538,7 +541,7 @@ export default function AdminSoundsPage() {
                     </svg>
                   )}
                 </div>
-              </button>
+              </div>
             ))
           )}
         </div>

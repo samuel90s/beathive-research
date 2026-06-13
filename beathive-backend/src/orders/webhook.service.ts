@@ -143,7 +143,7 @@ export class WebhookService {
     const order = await this.prisma.order.findFirst({
       where: { gatewayOrderId },
       include: {
-        items: { include: { soundEffect: { include: { author: { select: { id: true, name: true, email: true } } } } } },
+        items: { include: { audioAsset: { include: { author: { select: { id: true, name: true, email: true } } } } } },
         user: true,
       },
     });
@@ -176,8 +176,8 @@ export class WebhookService {
         const pdfUrl = await this.licenseService.generateLicensePdf({
           buyerName: order.user.name,
           buyerEmail: order.user.email,
-          soundTitle: item.soundEffect.title,
-          soundId: item.soundEffectId,
+          soundTitle: item.audioAsset.title,
+          soundId: item.audioAssetId,
           licenseType: item.licenseType,
           orderId: order.id,
           invoiceNumber,
@@ -204,13 +204,13 @@ export class WebhookService {
 
   private async notifyCreatorsOnSale(order: any) {
     for (const item of order.items ?? []) {
-      const author = item.soundEffect?.author;
+      const author = item.audioAsset?.author;
       if (!author?.email) continue;
       const creatorEarning = Math.round(item.priceSnapshot * 0.7);
       await this.email.sendSoundSold(
         author.email,
         author.name,
-        item.soundEffect.title,
+        item.audioAsset.title,
         creatorEarning,
         item.licenseType,
       ).catch(() => {});

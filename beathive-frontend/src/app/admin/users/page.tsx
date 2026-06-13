@@ -11,7 +11,7 @@ interface User {
   role: string;
   createdAt: string;
   subscription?: { plan: { name: string; slug: string }; status: string } | null;
-  _count: { uploadedSounds: number; orders: number };
+  _count: { uploadedAssets: number; orders: number };
 }
 
 export default function AdminUsersPage() {
@@ -98,7 +98,7 @@ export default function AdminUsersPage() {
                       <span className="text-xs text-[#6b6f82]">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right text-[#8b8fa8]">{u._count.uploadedSounds}</td>
+                  <td className="px-4 py-3 text-right text-[#8b8fa8]">{u._count.uploadedAssets}</td>
                   <td className="px-4 py-3 text-right text-[#8b8fa8]">{u._count.orders}</td>
                   <td className="px-4 py-3 text-right text-[#6b6f82] text-xs">
                     {new Date(u.createdAt).toLocaleDateString('en-GB')}

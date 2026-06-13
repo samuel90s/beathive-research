@@ -12,6 +12,41 @@ import * as mm from 'music-metadata';
 export class AudioService {
   private readonly logger = new Logger(AudioService.name);
 
+  async readEmbeddedMetadata(inputBuffer: Buffer, inputFormat: string): Promise<{
+    title?: string;
+    artist?: string;
+    album?: string;
+    genres?: string[];
+    bpm?: number;
+    musicalKey?: string;
+  }> {
+    try {
+      const fmt = inputFormat.toLowerCase();
+      const mimeType = fmt === 'mp3' ? 'audio/mpeg' : fmt === 'wav' ? 'audio/wav' : fmt === 'ogg' ? 'audio/ogg' : fmt === 'flac' ? 'audio/flac' : `audio/${fmt}`;
+      const metadata = await mm.parseBuffer(inputBuffer, { mimeType });
+      const common: any = metadata.common ?? {};
+      const nativeTags = Object.values(metadata.native ?? {}).flat() as any[];
+      const nativeValue = (...ids: string[]) => {
+        const found = nativeTags.find((tag) => ids.includes(String(tag.id).toUpperCase()));
+        return found?.value;
+      };
+      const bpmRaw = common.bpm ?? nativeValue('TBPM', 'BPM');
+      const bpm = Number.isFinite(Number(bpmRaw)) ? Math.round(Number(bpmRaw)) : undefined;
+      const key = common.key ?? nativeValue('TKEY', 'INITIALKEY', 'KEY');
+      return {
+        title: typeof common.title === 'string' ? common.title.trim() : undefined,
+        artist: typeof common.artist === 'string' ? common.artist.trim() : undefined,
+        album: typeof common.album === 'string' ? common.album.trim() : undefined,
+        genres: Array.isArray(common.genre) ? common.genre.map((g: unknown) => String(g).trim()).filter(Boolean) : undefined,
+        bpm: bpm && bpm >= 1 && bpm <= 300 ? bpm : undefined,
+        musicalKey: typeof key === 'string' ? key.trim() : undefined,
+      };
+    } catch (e: any) {
+      this.logger.debug(`embedded metadata read failed: ${e.message}`);
+      return {};
+    }
+  }
+
   // ─── Generate preview 30 detik ──────────────────────────
 
   async generatePreview(

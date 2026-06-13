@@ -308,8 +308,8 @@ export class AuthService {
     if (!user) return null;
 
     const [soundCount, sounds, aggregates] = await Promise.all([
-      this.prisma.soundEffect.count({ where: { authorId: userId, isPublished: true } }),
-      this.prisma.soundEffect.findMany({
+      this.prisma.audioAsset.count({ where: { authorId: userId, isPublished: true } }),
+      this.prisma.audioAsset.findMany({
         where: { authorId: userId, isPublished: true },
         orderBy: { downloadCount: 'desc' },
         take: 20,
@@ -321,7 +321,7 @@ export class AuthService {
           tags: { take: 10, select: { tag: { select: { name: true, slug: true } } } },
         },
       }),
-      this.prisma.soundEffect.aggregate({
+      this.prisma.audioAsset.aggregate({
         where: { authorId: userId, isPublished: true },
         _sum: { playCount: true, downloadCount: true },
       }),

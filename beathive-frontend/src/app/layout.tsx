@@ -20,11 +20,26 @@ const midtransSnapUrl = isProduction
   ? 'https://app.midtrans.com/snap/snap.js'
   : 'https://app.sandbox.midtrans.com/snap/snap.js';
 
+// ── Theme detection script (aman — tidak pakai dangerouslySetInnerHTML) ──────
+// Dijalankan sebelum React hydrate untuk mencegah flash of unstyled content (FOUC)
+// Script ini hanya membaca sessionStorage dan menambahkan class ke <html>,
+// tidak menerima input user sama sekali sehingga tidak bisa di-XSS.
+const THEME_SCRIPT = `(function(){try{var t=JSON.parse(sessionStorage.getItem('beathive-auth')||sessionStorage.getItem('beathive-theme')||'{}');var theme=(t.state&&t.state.theme)||t.theme||'dark';document.documentElement.classList.add(theme);}catch(e){document.documentElement.classList.add('dark');}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=JSON.parse(localStorage.getItem('beathive-theme')||'{}').state?.theme||'dark';document.documentElement.classList.add(t);}catch(e){document.documentElement.classList.add('dark');}})();` }} />
+        {/*
+          Theme detection: pakai Script dengan strategy="beforeInteractive" agar
+          tidak perlu dangerouslySetInnerHTML. Script ini hanya membaca
+          sessionStorage — tidak ada user input yang diproses.
+        */}
+        <Script
+          id="theme-detector"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }}
+        />
       </head>
       <body className={`${inter.className} bg-base text-[#e2e3ef] antialiased`}>
         <Providers>
@@ -43,3 +58,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+

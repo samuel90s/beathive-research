@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api/client';
 import { mediaUrl } from '@/lib/utils';
 import SoundRow from '@/components/sounds/SoundRow';
-import type { SoundEffect } from '@/types';
+import type { AudioAsset } from '@/types';
 
 interface CreatorProfile {
   id: string;
@@ -17,7 +17,7 @@ interface CreatorProfile {
   soundCount: number;
   totalPlays: number;
   totalDownloads: number;
-  sounds: SoundEffect[];
+  sounds: AudioAsset[];
 }
 
 export default function CreatorProfilePage() {

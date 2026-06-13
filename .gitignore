@@ -1,15 +1,34 @@
-# dependencies
+# ── Dependencies ──────────────────────────────────────────────────────────────
 **/node_modules
 
-# next.js
-**/.next
-
-# build
-**/dist
-**/build
-
-**/node_modules
+# ── Build Output ──────────────────────────────────────────────────────────────
 **/.next
 **/dist
 **/build
-.env*
+**/tsconfig.tsbuildinfo
+
+# ── Environment Variables (JANGAN pernah commit file .env) ────────────────────
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# ── Uploads (file audio, gambar user — simpan di cloud storage di production) ─
+beathive-backend/uploads/sounds/*
+beathive-backend/uploads/previews/*
+beathive-backend/uploads/avatars/*
+# Pertahankan folder struktur (agar folder tidak dihapus dari repo)
+!beathive-backend/uploads/sounds/.gitkeep
+!beathive-backend/uploads/previews/.gitkeep
+!beathive-backend/uploads/avatars/.gitkeep
+
+# ── File Test & Dokumen Sementara ─────────────────────────────────────────────
+beathive-backend/test-invoice.pdf
+beathive-backend/beathive_techstack.pdf
+
+# ── OS & Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.suo
+.vscode/*
+!.vscode/extensions.json

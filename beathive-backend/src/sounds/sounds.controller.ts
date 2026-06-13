@@ -37,6 +37,8 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { validateAudioMagicBytes, sanitizeFilename } from '../common/utils/file-magic.util';
+
 
 @Controller('sounds')
 export class SoundsController {
@@ -108,7 +110,11 @@ export class SoundsController {
     FileInterceptor('file', {
       storage: diskStorage({
         destination: (_req, _file, cb) => cb(null, os.tmpdir()),
-        filename: (_req, file, cb) => cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${path.extname(file.originalname)}`),
+        filename: (_req, file, cb) => {
+          // Sanitasi nama file sebelum disimpan sementara
+          const safeExt = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '');
+          cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${safeExt}`);
+        },
       }),
       limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
       fileFilter: (_req, file, cb) => {
@@ -119,11 +125,15 @@ export class SoundsController {
           'audio/flac', 'audio/x-flac',
           'application/octet-stream', // browser kadang kirim ini
         ];
-        if (allowed.includes(file.mimetype) || file.originalname.match(/\.(wav|mp3|ogg|flac)$/i)) {
-          cb(null, true);
-        } else {
-          cb(new Error(`Unsupported MIME type: ${file.mimetype}`), false);
+        // Cek ekstensi dulu (cepat)
+        const extOk = /\.(wav|mp3|ogg|flac)$/i.test(file.originalname);
+        if (!extOk) {
+          return cb(new BadRequestException(`Ekstensi file tidak didukung. Gunakan: WAV, MP3, OGG, FLAC`), false);
         }
+        if (!allowed.includes(file.mimetype) && !extOk) {
+          return cb(new BadRequestException(`MIME type tidak didukung: ${file.mimetype}`), false);
+        }
+        cb(null, true);
       },
     }),
   )
@@ -135,6 +145,23 @@ export class SoundsController {
     if (!file) {
       throw new BadRequestException('File audio wajib diupload');
     }
+
+    // ── Validasi magic bytes dari isi file (bukan hanya ekstensi/MIME) ──────────
+    // Mencegah file berbahaya (.php, .exe) yang disamarkan sebagai audio
+    const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+    const fileBuffer = file.buffer ?? fs.readFileSync(file.path!);
+    if (!validateAudioMagicBytes(fileBuffer, ext)) {
+      // Hapus file temp jika ada
+      if (file.path) try { fs.unlinkSync(file.path); } catch {}
+      throw new BadRequestException(
+        `File tidak valid: isi file tidak sesuai dengan format ${ext.toUpperCase()}. ` +
+        `Pastikan file benar-benar audio WAV, MP3, OGG, atau FLAC.`
+      );
+    }
+
+    // Sanitasi nama file originalname agar tidak ada path traversal
+    file.originalname = sanitizeFilename(file.originalname);
+
     return this.soundsService.uploadSound(file, dto, uploaderId);
   }
 
@@ -252,7 +279,7 @@ export class SoundsController {
 
     // Verifikasi akses — user harus punya download record (dari requestDownload)
     const lastDownload = await this.prisma.download.findFirst({
-      where: { userId, soundEffectId: id },
+      where: { userId, audioAssetId: id },
       orderBy: { downloadedAt: 'desc' },
     });
     if (!lastDownload) {
@@ -292,7 +319,7 @@ export class SoundsController {
 
     if (lastDownload?.source === 'purchase') {
       const orderItem = await this.prisma.orderItem.findFirst({
-        where: { soundEffectId: id, order: { userId, status: 'PAID' } },
+        where: { audioAssetId: id, order: { userId, status: 'PAID' } },
         include: { order: { include: { invoice: true } } },
         orderBy: { order: { paidAt: 'desc' } },
       });
@@ -391,5 +418,48 @@ export class SoundsController {
   ) {
     const isAdmin = req.user?.role === 'ADMIN';
     return this.soundsService.updateSound(userId, id, body, isAdmin);
+  }
+
+  // ─── PATCH /sounds/:id/resubmit  (creator only, REJECTED → PENDING) ──
+  @Patch(':id/resubmit')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => cb(null, os.tmpdir()),
+        filename: (_req, file, cb) => {
+          const safeExt = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '');
+          cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${safeExt}`);
+        },
+      }),
+      limits: { fileSize: 100 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const extOk = /\.(wav|mp3|ogg|flac)$/i.test(file.originalname);
+        if (!extOk) {
+          return cb(new BadRequestException(`Ekstensi file tidak didukung`), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async resubmitSound(
+    @Param('id') id: string,
+    @CurrentUser() userId: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body() body: Record<string, any>,
+  ) {
+    // Validasi magic bytes jika ada file baru
+    if (file) {
+      const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
+      const fileBuffer = file.buffer ?? fs.readFileSync(file.path!);
+      if (!validateAudioMagicBytes(fileBuffer, ext)) {
+        if (file.path) try { fs.unlinkSync(file.path); } catch {}
+        throw new BadRequestException(
+          `File tidak valid: isi file tidak sesuai format ${ext.toUpperCase()}.`
+        );
+      }
+      file.originalname = sanitizeFilename(file.originalname);
+    }
+    return this.soundsService.resubmitSound(userId, id, body as any, file);
   }
 }

@@ -39,7 +39,7 @@ model User {
   orders         Order[]
   downloads      Download[]
   wishlists      Wishlist[]
-  uploadedSounds SoundEffect[] @relation("AuthorSounds")
+  uploadedAssets AudioAsset[] @relation("AuthorAssets")
   wallet         CreatorWallet?
   ratings        Rating[]
 
@@ -104,7 +104,7 @@ model Category {
   slug         String        @unique
   icon         String?
   type         String        @default("sfx") // "sfx" | "music"
-  soundEffects SoundEffect[]
+  audioAssets AudioAsset[]
 
   @@map("categories")
 }
@@ -113,15 +113,16 @@ model Tag {
   id           String              @id @default(uuid())
   name         String
   slug         String              @unique
-  soundEffects SoundEffectOnTag[]
+  audioAssets AudioAssetOnTag[]
 
   @@map("tags")
 }
 
 // ─── Sound Effects ───────────────────────────────────────
 
-model SoundEffect {
+model AudioAsset {
   id           String      @id @default(uuid())
+  assetType    String      @default("SFX") // "SFX" | "MUSIC"
   categoryId   String
   authorId     String?     // null = upload oleh admin, ada = upload oleh author
   title        String
@@ -153,40 +154,41 @@ model SoundEffect {
   updatedAt    DateTime    @updatedAt
 
   category   Category           @relation(fields: [categoryId], references: [id])
-  author     User?              @relation("AuthorSounds", fields: [authorId], references: [id])
-  tags       SoundEffectOnTag[]
+  author     User?              @relation("AuthorAssets", fields: [authorId], references: [id])
+  tags       AudioAssetOnTag[]
   orderItems OrderItem[]
   downloads  Download[]
   wishlists  Wishlist[]
   ratings    Rating[]
   sfxMetadata   SfxMetadata?
   musicMetadata MusicMetadata?
-  genres        SoundGenre[]
+  genres        AudioAssetGenre[]
 
   @@index([isPublished, categoryId])
+  @@index([assetType])
   @@index([authorId])
   @@index([accessLevel])
   @@index([isPublished, accessLevel])
-  @@map("sound_effects")
+  @@map("audio_assets")
 }
 
 model SfxMetadata {
-  soundId     String  @id
+  assetId     String  @id
   subcategory String?
 
-  sound SoundEffect @relation(fields: [soundId], references: [id], onDelete: Cascade)
+  asset AudioAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   @@map("sfx_metadata")
 }
 
 model MusicMetadata {
-  soundId    String  @id
+  assetId    String  @id
   bpm        Int?
   mood       String?
   musicalKey String?
   hasStems   Boolean @default(false)
 
-  sound SoundEffect @relation(fields: [soundId], references: [id], onDelete: Cascade)
+  asset AudioAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   @@index([mood])
   @@index([bpm])
@@ -197,21 +199,21 @@ model Genre {
   id     String       @id @default(uuid())
   name   String
   slug   String       @unique
-  sounds SoundGenre[]
+  assets AudioAssetGenre[]
 
   @@map("genres")
 }
 
-model SoundGenre {
-  soundId String
+model AudioAssetGenre {
+  assetId String
   genreId String
 
-  sound SoundEffect @relation(fields: [soundId], references: [id], onDelete: Cascade)
+  asset AudioAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
   genre Genre       @relation(fields: [genreId], references: [id], onDelete: Cascade)
 
-  @@id([soundId, genreId])
+  @@id([assetId, genreId])
   @@index([genreId])
-  @@map("sound_genres")
+  @@map("audio_asset_genres")
 }
 
 enum AccessLevel {
@@ -221,15 +223,15 @@ enum AccessLevel {
   PURCHASE   // hanya bisa dibeli satuan
 }
 
-model SoundEffectOnTag {
-  soundEffectId String
+model AudioAssetOnTag {
+  audioAssetId String
   tagId         String
 
-  soundEffect SoundEffect @relation(fields: [soundEffectId], references: [id])
-  tag         Tag         @relation(fields: [tagId], references: [id])
+  audioAsset AudioAsset @relation(fields: [audioAssetId], references: [id])
+  tag        Tag        @relation(fields: [tagId], references: [id])
 
-  @@id([soundEffectId, tagId])
-  @@map("sound_effect_tags")
+  @@id([audioAssetId, tagId])
+  @@map("audio_asset_tags")
 }
 
 // ─── Orders ──────────────────────────────────────────────
@@ -265,13 +267,13 @@ enum OrderStatus {
 model OrderItem {
   id            String @id @default(uuid())
   orderId       String
-  soundEffectId String
+  audioAssetId  String
   priceSnapshot Int    // harga saat transaksi — tidak berubah walau harga SFX diupdate
   licenseType   String // "personal" | "commercial"
   licensePdfUrl String? // URL PDF lisensi setelah generated
 
-  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  soundEffect SoundEffect @relation(fields: [soundEffectId], references: [id])
+  order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  audioAsset AudioAsset @relation(fields: [audioAssetId], references: [id])
 
   @@map("order_items")
 }
@@ -295,17 +297,17 @@ model Invoice {
 model Download {
   id            String   @id @default(uuid())
   userId        String
-  soundEffectId String
+  audioAssetId  String
   source        String   // "subscription" | "purchase"
   signedUrl     String?  // signed URL sementara (expire 24 jam)
   expiresAt     DateTime?
   downloadedAt  DateTime @default(now())
 
-  user        User        @relation(fields: [userId], references: [id])
-  soundEffect SoundEffect @relation(fields: [soundEffectId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  audioAsset AudioAsset @relation(fields: [audioAssetId], references: [id])
 
   @@index([userId])
-  @@index([soundEffectId])
+  @@index([audioAssetId])
   @@map("downloads")
 }
 
@@ -342,7 +344,7 @@ model CreatorWallet {
 model CreatorEarning {
   id           String   @id @default(uuid())
   walletId     String
-  soundId      String
+  audioAssetId String
   downloadId   String?  // dedup key: download ID or 'pro:userId:soundId:YYYY-MM' or 'order:itemId'
   amountRp     Int      // nominal Rupiah yang didapat
   poolPercent  Int      @default(25) // % pool yang dipakai saat itu
@@ -376,16 +378,16 @@ model WithdrawalRequest {
 model Rating {
   id         String   @id @default(uuid())
   userId     String
-  soundId    String
+  audioAssetId String
   score      Int      // 1–5
   reviewText String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  user  User        @relation(fields: [userId], references: [id])
-  sound SoundEffect @relation(fields: [soundId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  audioAsset AudioAsset @relation(fields: [audioAssetId], references: [id])
 
-  @@unique([userId, soundId])
+  @@unique([userId, audioAssetId])
   @@map("ratings")
 }
 
@@ -394,12 +396,12 @@ model Rating {
 model Wishlist {
   id            String   @id @default(uuid())
   userId        String
-  soundEffectId String
+  audioAssetId  String
   createdAt     DateTime @default(now())
 
-  user        User        @relation(fields: [userId], references: [id])
-  soundEffect SoundEffect @relation(fields: [soundEffectId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  audioAsset AudioAsset @relation(fields: [audioAssetId], references: [id])
 
-  @@unique([userId, soundEffectId])
+  @@unique([userId, audioAssetId])
   @@map("wishlists")
 }

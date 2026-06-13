@@ -21,10 +21,10 @@ export class EarningsService {
   // ─── Hitung & simpan earning setelah PRO download ────────
   // Dipanggil fire-and-forget dari requestDownload
 
-  async recordEarning(soundId: string, downloadId: string) {
+  async recordEarning(audioAssetId: string, downloadId: string) {
     try {
-      const sound = await this.prisma.soundEffect.findUnique({
-        where: { id: soundId },
+      const sound = await this.prisma.audioAsset.findUnique({
+        where: { id: audioAssetId },
         select: { authorId: true, accessLevel: true, title: true },
       });
 
@@ -50,7 +50,7 @@ export class EarningsService {
 
         // Use predictable dedup key — prevents race condition between concurrent requests
         const yearMonth = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth() + 1).padStart(2, '0')}`;
-        const dedupKey = `pro:${download.userId}:${soundId}:${yearMonth}`;
+        const dedupKey = `pro:${download.userId}:${audioAssetId}:${yearMonth}`;
         earningKey = dedupKey;
 
         const priorEarning = await this.prisma.creatorEarning.findFirst({ where: { downloadId: dedupKey } });
@@ -76,7 +76,7 @@ export class EarningsService {
         const totalDownloads = await this.prisma.download.count({
           where: {
             downloadedAt: { gte: startOfMonth },
-            soundEffect: { accessLevel: 'PRO' },
+            audioAsset: { accessLevel: 'PRO' },
           },
         });
 
@@ -101,7 +101,7 @@ export class EarningsService {
           this.prisma.creatorEarning.create({
             data: {
               walletId: wallet.id,
-              soundId,
+              audioAssetId,
               downloadId: earningKey,
               amountRp,
               poolPercent: (sound.accessLevel as any) === 'PURCHASE' ? CREATOR_PURCHASE_PERCENT : CREATOR_POOL_PERCENT,
@@ -138,7 +138,7 @@ export class EarningsService {
         include: {
           items: {
             include: {
-              soundEffect: { select: { id: true, authorId: true, accessLevel: true, title: true } },
+              audioAsset: { select: { id: true, authorId: true, accessLevel: true, title: true } },
             },
           },
         },
@@ -147,7 +147,7 @@ export class EarningsService {
       if (!order || order.status !== 'PAID') return;
 
       for (const item of order.items) {
-        if (!item.soundEffect.authorId) continue;
+        if (!item.audioAsset.authorId) continue;
 
         const dedupKey = `order:${item.id}`;
 
@@ -161,16 +161,16 @@ export class EarningsService {
         if (amountRp <= 0) continue;
 
         const wallet = await this.prisma.creatorWallet.upsert({
-          where: { userId: item.soundEffect.authorId },
+          where: { userId: item.audioAsset.authorId },
           update: {},
-          create: { userId: item.soundEffect.authorId, balance: 0, totalEarned: 0 },
+          create: { userId: item.audioAsset.authorId, balance: 0, totalEarned: 0 },
         });
 
         await this.prisma.$transaction([
           this.prisma.creatorEarning.create({
             data: {
               walletId: wallet.id,
-              soundId: item.soundEffectId,
+              audioAssetId: item.audioAssetId,
               downloadId: dedupKey,
               amountRp,
               poolPercent: CREATOR_PURCHASE_PERCENT,
@@ -186,7 +186,7 @@ export class EarningsService {
         ]);
 
         this.logger.log(
-          `Purchase earning recorded: creator=${item.soundEffect.authorId} sound="${item.soundEffect.title}" amount=Rp${amountRp.toLocaleString()}`,
+          `Purchase earning recorded: creator=${item.audioAsset.authorId} sound="${item.audioAsset.title}" amount=Rp${amountRp.toLocaleString()}`,
         );
       }
     } catch (err: any) {
@@ -205,7 +205,7 @@ export class EarningsService {
 
     const earnings = await this.prisma.creatorEarning.findMany({
       where: { walletId: wallet.id, earnedAt: { gte: since } },
-      select: { amountRp: true, soundId: true, earnedAt: true },
+      select: { amountRp: true, audioAssetId: true, earnedAt: true },
       orderBy: { earnedAt: 'asc' },
     });
 
@@ -228,15 +228,15 @@ export class EarningsService {
 
     // Top sounds by earnings
     const soundTotals: Record<string, number> = {};
-    for (const e of earnings) soundTotals[e.soundId] = (soundTotals[e.soundId] ?? 0) + e.amountRp;
+    for (const e of earnings) soundTotals[e.audioAssetId] = (soundTotals[e.audioAssetId] ?? 0) + e.amountRp;
     const topSoundIds = Object.entries(soundTotals).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id]) => id);
-    const topSoundData = await this.prisma.soundEffect.findMany({
+    const topSoundData = await this.prisma.audioAsset.findMany({
       where: { id: { in: topSoundIds } },
       select: { id: true, title: true, downloadCount: true, slug: true },
     });
     const topSounds = topSoundIds.map(id => {
       const s = topSoundData.find(x => x.id === id);
-      return { soundId: id, title: s?.title ?? '—', slug: s?.slug ?? '', earnings: soundTotals[id], downloads: s?.downloadCount ?? 0 };
+      return { audioAssetId: id, title: s?.title ?? '—', slug: s?.slug ?? '', earnings: soundTotals[id], downloads: s?.downloadCount ?? 0 };
     });
 
     // Trend: compare this month vs last month
@@ -264,7 +264,7 @@ export class EarningsService {
           take: earningsLimit,
           select: {
             id: true,
-            soundId: true,
+            audioAssetId: true,
             amountRp: true,
             earnedAt: true,
           },
@@ -284,9 +284,9 @@ export class EarningsService {
     const totalEarnings = await this.prisma.creatorEarning.count({ where: { walletId: wallet.id } });
 
     // Enrich earnings dengan sound title
-    const soundIds = [...new Set(wallet.earnings.map(e => e.soundId))];
-    const sounds = await this.prisma.soundEffect.findMany({
-      where: { id: { in: soundIds } },
+    const audioAssetIds = [...new Set(wallet.earnings.map(e => e.audioAssetId))];
+    const sounds = await this.prisma.audioAsset.findMany({
+      where: { id: { in: audioAssetIds } },
       select: { id: true, title: true },
     });
     const soundMap = Object.fromEntries(sounds.map(s => [s.id, s.title]));
@@ -296,7 +296,7 @@ export class EarningsService {
       totalEarned: wallet.totalEarned,
       earnings: wallet.earnings.map(e => ({
         id: e.id,
-        soundTitle: soundMap[e.soundId] ?? 'Unknown sound',
+        soundTitle: soundMap[e.audioAssetId] ?? 'Unknown sound',
         amountRp: e.amountRp,
         earnedAt: e.earnedAt,
       })),

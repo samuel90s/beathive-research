@@ -18,8 +18,8 @@ export class AdminService {
     const [users, sounds, pendingSounds, orders, activeSubscriptions] =
       await Promise.all([
         this.prisma.user.count(),
-        this.prisma.soundEffect.count(),
-        this.prisma.soundEffect.count({ where: { reviewStatus: { in: ['PENDING', 'NEEDS_RE_REVIEW'] } } }),
+        this.prisma.audioAsset.count(),
+        this.prisma.audioAsset.count({ where: { reviewStatus: { in: ['PENDING', 'NEEDS_RE_REVIEW'] } } }),
         this.prisma.order.count({ where: { status: 'PAID' } }),
         this.prisma.subscription.count({
           where: { status: 'ACTIVE', plan: { slug: { not: 'free' } } },
@@ -49,12 +49,12 @@ export class AdminService {
 
     const skip = (page - 1) * limit;
     const [total, items] = await Promise.all([
-      this.prisma.soundEffect.count({ where }),
-      this.prisma.soundEffect.findMany({
+      this.prisma.audioAsset.count({ where }),
+      this.prisma.audioAsset.findMany({
         where,
         include: {
           category: true,
-          author: { select: { id: true, name: true, email: true, createdAt: true, _count: { select: { uploadedSounds: true } } } },
+          author: { select: { id: true, name: true, email: true, createdAt: true, _count: { select: { uploadedAssets: true } } } },
           tags: { include: { tag: { select: { name: true, slug: true } } } },
           _count: { select: { downloads: true, ratings: true } },
         },
@@ -73,10 +73,10 @@ export class AdminService {
   // ─── Approve sound ───────────────────────────────────────
 
   async approveSound(soundId: string, adminId: string) {
-    const sound = await this.prisma.soundEffect.findUnique({ where: { id: soundId } });
+    const sound = await this.prisma.audioAsset.findUnique({ where: { id: soundId } });
     if (!sound) throw new NotFoundException('Sound not found');
 
-    const updated = await this.prisma.soundEffect.update({
+    const updated = await this.prisma.audioAsset.update({
       where: { id: soundId },
       data: {
         reviewStatus: 'APPROVED',
@@ -102,10 +102,10 @@ export class AdminService {
   // ─── Reject sound ────────────────────────────────────────
 
   async rejectSound(soundId: string, adminId: string, reason: string) {
-    const sound = await this.prisma.soundEffect.findUnique({ where: { id: soundId } });
+    const sound = await this.prisma.audioAsset.findUnique({ where: { id: soundId } });
     if (!sound) throw new NotFoundException('Sound not found');
 
-    const updated = await this.prisma.soundEffect.update({
+    const updated = await this.prisma.audioAsset.update({
       where: { id: soundId },
       data: {
         reviewStatus: 'REJECTED',
@@ -150,7 +150,7 @@ export class AdminService {
           role: true,
           createdAt: true,
           subscription: { include: { plan: true } },
-          _count: { select: { uploadedSounds: true, orders: true } },
+          _count: { select: { uploadedAssets: true, orders: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -245,7 +245,7 @@ export class AdminService {
       this.prisma.order.findMany({
         include: {
           user: { select: { id: true, name: true, email: true } },
-          items: { include: { soundEffect: { select: { title: true } } } },
+          items: { include: { audioAsset: { select: { title: true } } } },
           invoice: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -265,7 +265,7 @@ export class AdminService {
   async getCategories() {
     const cats = await this.prisma.category.findMany({
       orderBy: { name: 'asc' },
-      include: { _count: { select: { soundEffects: true } } },
+      include: { _count: { select: { audioAssets: true } } },
     });
     return cats;
   }
@@ -283,10 +283,10 @@ export class AdminService {
   async deleteCategory(id: string) {
     const cat = await this.prisma.category.findUnique({
       where: { id },
-      include: { _count: { select: { soundEffects: true } } },
+      include: { _count: { select: { audioAssets: true } } },
     });
     if (!cat) throw new NotFoundException('Category not found');
-    if (cat._count.soundEffects > 0) throw new ForbiddenException(`Cannot delete: ${cat._count.soundEffects} sounds use this category`);
+    if (cat._count.audioAssets > 0) throw new ForbiddenException(`Cannot delete: ${cat._count.audioAssets} sounds use this category`);
     await this.prisma.category.delete({ where: { id } });
     return { ok: true };
   }
@@ -296,7 +296,7 @@ export class AdminService {
   async getTags() {
     return this.prisma.tag.findMany({
       orderBy: { name: 'asc' },
-      include: { _count: { select: { soundEffects: true } } },
+      include: { _count: { select: { audioAssets: true } } },
     });
   }
 
@@ -305,7 +305,7 @@ export class AdminService {
   }
 
   async deleteTag(id: string) {
-    await this.prisma.soundEffectOnTag.deleteMany({ where: { tagId: id } });
+    await this.prisma.audioAssetOnTag.deleteMany({ where: { tagId: id } });
     await this.prisma.tag.delete({ where: { id } });
     return { ok: true };
   }

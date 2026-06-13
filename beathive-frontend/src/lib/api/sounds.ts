@@ -2,7 +2,7 @@
 import { apiClient } from './client';
 import type {
   SoundsResponse,
-  SoundEffect,
+  AudioAsset,
   SoundFilters,
   DownloadResult,
   WishlistToggleResult,
@@ -32,7 +32,7 @@ export const soundsApi = {
     return data;
   },
 
-  getOne: async (slug: string): Promise<SoundEffect> => {
+  getOne: async (slug: string): Promise<AudioAsset> => {
     const { data } = await apiClient.get(`/sounds/${slug}`);
     return data;
   },
@@ -70,7 +70,7 @@ export const soundsApi = {
   },
 
   /** Related sounds berdasarkan kategori */
-  getRelated: async (slug: string, limit = 6): Promise<SoundEffect[]> => {
+  getRelated: async (slug: string, limit = 6): Promise<AudioAsset[]> => {
     const { data } = await apiClient.get(`/sounds/${slug}/related?limit=${limit}`);
     return data;
   },

@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   IsEnum,
   IsNumber,
+  IsInt,
   IsOptional,
   IsString,
   IsBoolean,
@@ -17,6 +18,7 @@ import {
   Min,
   Max,
   ArrayMaxSize,
+  Matches,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { PrismaService } from '../prisma/prisma.service';
@@ -141,8 +143,10 @@ export class SoundFilterDto {
 }
 
 export class UploadSoundDto {
+  @IsOptional()
   @IsString()
-  title: string;
+  @MaxLength(120)
+  title?: string;
 
   @IsOptional()
   @IsString()
@@ -163,7 +167,7 @@ export class UploadSoundDto {
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsInt({ message: 'price must be an integer number' })
   @Min(0)
   @Max(10_000_000)
   price?: number;
@@ -178,6 +182,8 @@ export class UploadSoundDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(300)
+  @Matches(/^[a-zA-Z0-9,\s\-]*$/, { message: 'tags may only contain letters, numbers, commas, spaces, or hyphens' })
   tags?: string; // comma-separated tag names
 
   // Music metadata
@@ -209,16 +215,19 @@ export class UploadSoundDto {
 export class UpdateSoundDto {
   @IsOptional()
   @IsString()
+  @MaxLength(120)
   title?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsInt({ message: 'price must be an integer number' })
   @Min(0)
+  @Max(10_000_000)
   price?: number;
 
   @IsOptional()
@@ -230,9 +239,8 @@ export class UpdateSoundDto {
   categorySlug?: string;
 
   @IsOptional()
-  @IsString({ each: true })
-  @ArrayMaxSize(20)
-  tags?: string[];
+  @Transform(({ value }) => value || undefined)
+  tags?: string[] | string;
 
   // Music metadata
   @IsOptional()
@@ -275,6 +283,17 @@ export class SoundsService {
     private earnings: EarningsService,
   ) {}
 
+  private parseOptionalInt(value: unknown, fieldName: string, max = 10_000_000): number | undefined {
+    if (value === undefined || value === null || value === '') return undefined;
+
+    const parsed = typeof value === 'number' ? value : Number(value);
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > max) {
+      throw new BadRequestException(`${fieldName} must be a whole number between 0 and ${max}`);
+    }
+
+    return parsed;
+  }
+
   // ─── List sounds ─────────────────────────────────────────
 
   async findAll(filters: SoundFilterDto, userId?: string) {
@@ -307,7 +326,7 @@ export class SoundsService {
     if (categorySlug) {
       where.category = { slug: categorySlug };
     } else if (filters.soundType) {
-      where.category = { type: filters.soundType };
+      where.assetType = String(filters.soundType).toLowerCase() === 'music' ? 'MUSIC' : 'SFX';
     }
 
     if (isFree !== undefined) {
@@ -391,8 +410,8 @@ export class SoundsService {
     const mergedWhere = { ...where, ...trendingWhere };
 
     const [total, items] = await Promise.all([
-      this.prisma.soundEffect.count({ where: mergedWhere }),
-      this.prisma.soundEffect.findMany({
+      this.prisma.audioAsset.count({ where: mergedWhere }),
+      this.prisma.audioAsset.findMany({
         where: mergedWhere,
         include: {
           category: true,
@@ -416,12 +435,12 @@ export class SoundsService {
       const soundIds = items.map(s => s.id);
       const purchases = await this.prisma.orderItem.findMany({
         where: {
-          soundEffectId: { in: soundIds },
+          audioAssetId: { in: soundIds },
           order: { userId, status: 'PAID' },
         },
-        select: { soundEffectId: true },
+        select: { audioAssetId: true },
       });
-      purchasedIds = new Set(purchases.map(p => p.soundEffectId));
+      purchasedIds = new Set(purchases.map(p => p.audioAssetId));
     }
 
     return {
@@ -441,7 +460,7 @@ export class SoundsService {
   // ─── Single sound ─────────────────────────────────────────
 
   async findOne(slug: string, userId?: string) {
-    const sound = await this.prisma.soundEffect.findUnique({
+    const sound = await this.prisma.audioAsset.findUnique({
       where: { slug, isPublished: true },
       include: {
         category: true,
@@ -460,7 +479,7 @@ export class SoundsService {
     if (userId && sound.accessLevel === 'PURCHASE') {
       const purchase = await this.prisma.orderItem.findFirst({
         where: {
-          soundEffectId: sound.id,
+          audioAssetId: sound.id,
           order: { userId, status: 'PAID' },
         },
       });
@@ -473,13 +492,13 @@ export class SoundsService {
   // ─── Find by ID (internal) ────────────────────────────────
 
   async findById(id: string) {
-    return this.prisma.soundEffect.findUnique({ where: { id } });
+    return this.prisma.audioAsset.findUnique({ where: { id } });
   }
 
   // ─── Get preview info for streaming ──────────────────────
 
   async getPreviewInfo(id: string) {
-    return this.prisma.soundEffect.findUnique({
+    return this.prisma.audioAsset.findUnique({
       where: { id },
       select: { id: true, previewUrl: true, format: true },
     });
@@ -492,7 +511,7 @@ export class SoundsService {
   // ─── Increment play count ────────────────────────────────
 
   async incrementPlayCount(id: string) {
-    await this.prisma.soundEffect.update({
+    await this.prisma.audioAsset.update({
       where: { id },
       data: { playCount: { increment: 1 } },
     });
@@ -501,7 +520,7 @@ export class SoundsService {
   // ─── Request download ─────────────────────────────────────
 
   async requestDownload(soundId: string, userId: string) {
-    const sound = await this.prisma.soundEffect.findUnique({
+    const sound = await this.prisma.audioAsset.findUnique({
       where: { id: soundId },
     });
     if (!sound || !sound.isPublished) {
@@ -512,7 +531,7 @@ export class SoundsService {
 
     const alreadyPurchased = await this.prisma.orderItem.findFirst({
       where: {
-        soundEffectId: soundId,
+        audioAssetId: soundId,
         order: { userId, status: 'PAID' },
       },
     });
@@ -598,13 +617,13 @@ export class SoundsService {
       const record = await tx.download.create({
         data: {
           userId,
-          soundEffectId: soundId,
+          audioAssetId: soundId,
           source: alreadyPurchased ? 'purchase' : 'subscription',
           signedUrl: downloadUrl,
           expiresAt,
         },
       });
-      await tx.soundEffect.update({
+      await tx.audioAsset.update({
         where: { id: soundId },
         data: { downloadCount: { increment: 1 } },
       });
@@ -636,7 +655,7 @@ export class SoundsService {
   // ─── Recalculate duration for sounds with durationMs = 0 ──
 
   async recalculateDuration(soundId: string, requesterId?: string): Promise<{ durationMs: number }> {
-    const sound = await this.prisma.soundEffect.findUnique({ where: { id: soundId } });
+    const sound = await this.prisma.audioAsset.findUnique({ where: { id: soundId } });
     if (!sound) throw new NotFoundException('Sound not found');
 
     if (requesterId) {
@@ -657,7 +676,7 @@ export class SoundsService {
     const durationMs = await this.audio.getDuration(buffer, ext);
 
     if (durationMs > 0) {
-      await this.prisma.soundEffect.update({
+      await this.prisma.audioAsset.update({
         where: { id: soundId },
         data: { durationMs },
       });
@@ -708,16 +727,18 @@ export class SoundsService {
       resolvedCategory = { id: cat.id, type: cat.type };
     }
 
-    // Generate slug unik
-    const slug = dto.slug
-      ? await this.ensureUniqueSlug(this.toSlug(dto.slug))
-      : await this.ensureUniqueSlug(this.toSlug(dto.title));
-
-    const soundId = uuidv4();
-
     // Read file from disk (diskStorage) or memory (memoryStorage fallback)
     if (!file.buffer && !file.path) throw new BadRequestException('Audio file not available');
     const fileBuffer: Buffer = file.buffer ?? fs.readFileSync(file.path!);
+    const embedded = await this.audio.readEmbeddedMetadata(fileBuffer, ext);
+    const title = (dto.title?.trim() || embedded.title || file.originalname.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ')).trim();
+
+    // Generate slug unik
+    const slug = dto.slug
+      ? await this.ensureUniqueSlug(this.toSlug(dto.slug))
+      : await this.ensureUniqueSlug(this.toSlug(title));
+
+    const soundId = uuidv4();
 
     // Proses audio
     let previewBuffer: Buffer = fileBuffer;
@@ -757,12 +778,13 @@ export class SoundsService {
     );
 
     // Simpan ke database
-    const sound = await this.prisma.soundEffect.create({
+    const sound = await this.prisma.audioAsset.create({
       data: {
         id: soundId,
+        assetType: resolvedCategory.type === 'music' ? 'MUSIC' : 'SFX',
         category: { connect: { id: categoryId! } },
         author: { connect: { id: uploaderId } },
-        title: dto.title,
+        title,
         slug,
         description: dto.description ?? null,
         fileUrl,
@@ -771,7 +793,7 @@ export class SoundsService {
         durationMs,
         fileSize: file.size,
         format: ext,
-        price: dto.price ?? 0,
+        price: this.parseOptionalInt(dto.price, 'price') ?? 0,
         accessLevel: (dto.accessLevel ?? 'FREE') as 'FREE' | 'PRO' | 'BUSINESS' | 'PURCHASE',
         licenseType: dto.licenseType ?? 'personal',
         isPublished: false,
@@ -791,17 +813,24 @@ export class SoundsService {
     // Using $executeRaw (parameterized — safe from injection) as a temporary
     // workaround because the Prisma client DLL cannot be regenerated while
     // the server process holds a lock on it (Windows EPERM).
-    if (dto.bpm !== undefined || dto.mood !== undefined || dto.musicalKey !== undefined || dto.hasStems !== undefined) {
+    const musicDto = {
+      ...dto,
+      bpm: dto.bpm ?? embedded.bpm,
+      musicalKey: dto.musicalKey ?? embedded.musicalKey,
+      genres: dto.genres ?? embedded.genres?.join(','),
+    };
+
+    if (musicDto.bpm !== undefined || musicDto.mood !== undefined || musicDto.musicalKey !== undefined || musicDto.hasStems !== undefined) {
       await this.prisma.$executeRaw`
-        UPDATE sound_effects
-        SET bpm=${dto.bpm ?? null},
-            mood=${dto.mood ?? null},
-            "musicalKey"=${dto.musicalKey ?? null},
-            "hasStems"=${dto.hasStems ?? false}
+        UPDATE audio_assets
+        SET bpm=${musicDto.bpm ?? null},
+            mood=${musicDto.mood ?? null},
+            "musicalKey"=${musicDto.musicalKey ?? null},
+            "hasStems"=${musicDto.hasStems ?? false}
         WHERE id=${soundId}
       `;
     }
-    await this.syncTypedMetadata(soundId, resolvedCategory.type, dto);
+    await this.syncTypedMetadata(soundId, resolvedCategory.type, musicDto);
 
     // Tags
     if (dto.tags) {
@@ -813,12 +842,12 @@ export class SoundsService {
           update: {},
           create: { name, slug: tagSlug },
         });
-        await this.prisma.soundEffectOnTag.upsert({
+        await this.prisma.audioAssetOnTag.upsert({
           where: {
-            soundEffectId_tagId: { soundEffectId: soundId, tagId: tag.id },
+            audioAssetId_tagId: { audioAssetId: soundId, tagId: tag.id },
           },
           update: {},
-          create: { soundEffectId: soundId, tagId: tag.id },
+          create: { audioAssetId: soundId, tagId: tag.id },
         });
       }
     }
@@ -833,7 +862,7 @@ export class SoundsService {
       this.recalculateDuration(soundId).catch(() => {});
     }
 
-    const enriched = await this.prisma.soundEffect.findUnique({
+    const enriched = await this.prisma.audioAsset.findUnique({
       where: { id: soundId },
       include: {
         category: true,
@@ -859,7 +888,7 @@ export class SoundsService {
         slug: true,
         icon: true,
         type: true,
-        _count: { select: { soundEffects: true } },
+        _count: { select: { audioAssets: true } },
       },
     });
   }
@@ -867,24 +896,24 @@ export class SoundsService {
   // ─── Wishlist ─────────────────────────────────────────────
 
   async toggleWishlist(soundId: string, userId: string) {
-    const sound = await this.prisma.soundEffect.findUnique({
+    const sound = await this.prisma.audioAsset.findUnique({
       where: { id: soundId },
     });
     if (!sound) throw new NotFoundException('Sound effect not found');
 
     const existing = await this.prisma.wishlist.findUnique({
-      where: { userId_soundEffectId: { userId, soundEffectId: soundId } },
+      where: { userId_audioAssetId: { userId, audioAssetId: soundId } },
     });
 
     if (existing) {
       await this.prisma.wishlist.delete({
-        where: { userId_soundEffectId: { userId, soundEffectId: soundId } },
+        where: { userId_audioAssetId: { userId, audioAssetId: soundId } },
       });
       return { liked: false, message: 'Dihapus dari wishlist' };
     }
 
     await this.prisma.wishlist.create({
-      data: { userId, soundEffectId: soundId },
+      data: { userId, audioAssetId: soundId },
     });
     return { liked: true, message: 'Ditambahkan ke wishlist' };
   }
@@ -897,7 +926,7 @@ export class SoundsService {
       this.prisma.wishlist.findMany({
         where: { userId },
         include: {
-          soundEffect: {
+          audioAsset: {
             include: {
               category: true,
               tags: { include: { tag: true } },
@@ -915,7 +944,7 @@ export class SoundsService {
     ]);
 
     return {
-      items: items.map((w) => this.formatSound(w.soundEffect, userId, true)),
+      items: items.map((w) => this.formatSound(w.audioAsset, userId, true)),
       pagination: {
         total,
         page: Number(page),
@@ -930,8 +959,8 @@ export class SoundsService {
   async getAuthorSounds(authorId: string, page = 1, limit = 20) {
     const skip = (Number(page) - 1) * Number(limit);
     const [total, items] = await Promise.all([
-      this.prisma.soundEffect.count({ where: { authorId } }),
-      this.prisma.soundEffect.findMany({
+      this.prisma.audioAsset.count({ where: { authorId } }),
+      this.prisma.audioAsset.findMany({
         where: { authorId },
         include: {
           category: true,
@@ -960,13 +989,13 @@ export class SoundsService {
   // ─── Related sounds ──────────────────────────────────────
 
   async findRelated(slug: string, limit = 6) {
-    const sound = await this.prisma.soundEffect.findUnique({
+    const sound = await this.prisma.audioAsset.findUnique({
       where: { slug },
       select: { id: true, categoryId: true },
     });
     if (!sound) return [];
 
-    const items = await this.prisma.soundEffect.findMany({
+    const items = await this.prisma.audioAsset.findMany({
       where: {
         isPublished: true,
         categoryId: sound.categoryId,
@@ -990,7 +1019,7 @@ export class SoundsService {
   // ─── Creator analytics ────────────────────────────────────
 
   async getCreatorAnalytics(authorId: string) {
-    const sounds = await this.prisma.soundEffect.findMany({
+    const sounds = await this.prisma.audioAsset.findMany({
       where: { authorId },
       select: { id: true, title: true, playCount: true, downloadCount: true, createdAt: true },
       orderBy: { downloadCount: 'desc' },
@@ -1005,7 +1034,7 @@ export class SoundsService {
 
     const downloads = soundIds.length > 0 ? await this.prisma.download.findMany({
       where: {
-        soundEffectId: { in: soundIds },
+        audioAssetId: { in: soundIds },
         downloadedAt: { gte: sixMonthsAgo },
       },
       select: { downloadedAt: true },
@@ -1049,7 +1078,7 @@ export class SoundsService {
 
     const where: any = { userId };
     if (source === 'subscription' || source === 'purchase') where.source = source;
-    if (Object.keys(soundWhere).length > 0) where.soundEffect = soundWhere;
+    if (Object.keys(soundWhere).length > 0) where.audioAsset = soundWhere;
 
     const [total, downloads] = await Promise.all([
       this.prisma.download.count({ where }),
@@ -1059,7 +1088,7 @@ export class SoundsService {
         take: Number(limit),
         orderBy: { downloadedAt: 'desc' },
         include: {
-          soundEffect: {
+          audioAsset: {
             include: {
               category: true,
               author: { select: { id: true, name: true } },
@@ -1071,7 +1100,7 @@ export class SoundsService {
 
     // For purchase downloads, look up licenseType from OrderItem
     const purchaseSoundIds = [...new Set(
-      downloads.filter(d => d.source === 'purchase').map(d => d.soundEffectId),
+      downloads.filter(d => d.source === 'purchase').map(d => d.audioAssetId),
     )];
 
     const licenseMap: Record<string, string> = {};
@@ -1080,34 +1109,34 @@ export class SoundsService {
     if (purchaseSoundIds.length > 0) {
       const orderItems = await this.prisma.orderItem.findMany({
         where: {
-          soundEffectId: { in: purchaseSoundIds },
+          audioAssetId: { in: purchaseSoundIds },
           order: { userId, status: 'PAID' },
         },
-        select: { soundEffectId: true, licenseType: true, priceSnapshot: true },
-        distinct: ['soundEffectId'],
+        select: { audioAssetId: true, licenseType: true, priceSnapshot: true },
+        distinct: ['audioAssetId'],
       });
       orderItems.forEach(oi => {
-        licenseMap[oi.soundEffectId] = oi.licenseType;
-        priceMap[oi.soundEffectId] = oi.priceSnapshot;
+        licenseMap[oi.audioAssetId] = oi.licenseType;
+        priceMap[oi.audioAssetId] = oi.priceSnapshot;
       });
     }
 
     let items = downloads.map(d => ({
       id: d.id,
-      soundId: d.soundEffectId,
-      soundTitle: d.soundEffect.title,
-      soundSlug: d.soundEffect.slug,
-      soundFormat: d.soundEffect.format,
-      previewUrl: d.soundEffect.previewUrl,
-      categoryName: d.soundEffect.category.name,
-      categorySlug: d.soundEffect.category.slug,
-      authorName: (d.soundEffect as any).author?.name ?? null,
-      authorId: (d.soundEffect as any).author?.id ?? null,
+      soundId: d.audioAssetId,
+      soundTitle: d.audioAsset.title,
+      soundSlug: d.audioAsset.slug,
+      soundFormat: d.audioAsset.format,
+      previewUrl: d.audioAsset.previewUrl,
+      categoryName: d.audioAsset.category.name,
+      categorySlug: d.audioAsset.category.slug,
+      authorName: (d.audioAsset as any).author?.name ?? null,
+      authorId: (d.audioAsset as any).author?.id ?? null,
       source: d.source,
       licenseType: d.source === 'subscription'
         ? 'personal'
-        : (licenseMap[d.soundEffectId] ?? 'personal'),
-      priceAtPurchase: d.source === 'purchase' ? (priceMap[d.soundEffectId] ?? 0) : null,
+        : (licenseMap[d.audioAssetId] ?? 'personal'),
+      priceAtPurchase: d.source === 'purchase' ? (priceMap[d.audioAssetId] ?? 0) : null,
       downloadedAt: d.downloadedAt,
     }));
 
@@ -1136,6 +1165,7 @@ export class SoundsService {
 
     return {
       id: sound.id,
+      assetType: sound.assetType ?? (sound.category?.type === 'music' ? 'MUSIC' : 'SFX'),
       title: sound.title,
       slug: sound.slug,
       description: sound.description,
@@ -1183,7 +1213,7 @@ export class SoundsService {
   private async ensureUniqueSlug(base: string): Promise<string> {
     let slug = base;
     let counter = 1;
-    while (await this.prisma.soundEffect.findUnique({ where: { slug } })) {
+    while (await this.prisma.audioAsset.findUnique({ where: { slug } })) {
       slug = `${base}-${counter++}`;
     }
     return slug;
@@ -1205,7 +1235,7 @@ export class SoundsService {
   }
 
   private async syncTypedMetadata(
-    soundId: string,
+    audioAssetId: string,
     categoryType: string,
     dto: {
       bpm?: number;
@@ -1223,34 +1253,34 @@ export class SoundsService {
       if (dto.hasStems !== undefined) update.hasStems = dto.hasStems ?? false;
 
       await this.prisma.musicMetadata.upsert({
-        where: { soundId },
+        where: { assetId: audioAssetId },
         update,
         create: {
-          soundId,
+          assetId: audioAssetId,
           bpm: dto.bpm ?? null,
           mood: dto.mood ?? null,
           musicalKey: dto.musicalKey ?? null,
           hasStems: dto.hasStems ?? false,
         },
       });
-      await this.prisma.sfxMetadata.deleteMany({ where: { soundId } });
+      await this.prisma.sfxMetadata.deleteMany({ where: { assetId: audioAssetId } });
       if (dto.genres !== undefined) {
-        await this.syncGenres(soundId, this.parseGenreSlugs(dto.genres));
+        await this.syncGenres(audioAssetId, this.parseGenreSlugs(dto.genres));
       }
       return;
     }
 
     await this.prisma.sfxMetadata.upsert({
-      where: { soundId },
+      where: { assetId: audioAssetId },
       update: {},
-      create: { soundId },
+      create: { assetId: audioAssetId },
     });
-    await this.prisma.musicMetadata.deleteMany({ where: { soundId } });
-    await this.prisma.soundGenre.deleteMany({ where: { soundId } });
+    await this.prisma.musicMetadata.deleteMany({ where: { assetId: audioAssetId } });
+    await this.prisma.audioAssetGenre.deleteMany({ where: { assetId: audioAssetId } });
   }
 
-  private async syncGenres(soundId: string, genreSlugs: string[]) {
-    await this.prisma.soundGenre.deleteMany({ where: { soundId } });
+  private async syncGenres(audioAssetId: string, genreSlugs: string[]) {
+    await this.prisma.audioAssetGenre.deleteMany({ where: { assetId: audioAssetId } });
     if (genreSlugs.length === 0) return;
 
     const genres = await Promise.all(
@@ -1263,8 +1293,8 @@ export class SoundsService {
       ),
     );
 
-    await this.prisma.soundGenre.createMany({
-      data: genres.map((genre) => ({ soundId, genreId: genre.id })),
+    await this.prisma.audioAssetGenre.createMany({
+      data: genres.map((genre) => ({ assetId: audioAssetId, genreId: genre.id })),
       skipDuplicates: true,
     });
   }
@@ -1277,7 +1307,7 @@ export class SoundsService {
     dto: UpdateSoundDto,
     isAdmin = false,
   ) {
-    const sound = await this.prisma.soundEffect.findUnique({
+    const sound = await this.prisma.audioAsset.findUnique({
       where: { id: soundId },
     });
     if (!sound) throw new NotFoundException('Sound effect not found');
@@ -1297,16 +1327,18 @@ export class SoundsService {
     }
     if (dto.description !== undefined) updateData.description = dto.description;
 
-    const priceChanged = dto.price !== undefined && dto.price !== sound.price;
+    const price = this.parseOptionalInt(dto.price, 'price');
+    const priceChanged = price !== undefined && price !== sound.price;
     const accessLevelChanged = dto.accessLevel !== undefined && dto.accessLevel !== sound.accessLevel;
 
-    if (dto.price !== undefined) updateData.price = dto.price;
+    if (price !== undefined) updateData.price = price;
     if (dto.accessLevel !== undefined) updateData.accessLevel = dto.accessLevel;
 
     if (dto.categorySlug !== undefined) {
       const cat = await this.prisma.category.findUnique({ where: { slug: dto.categorySlug } });
       if (!cat) throw new BadRequestException('Category not found');
       updateData.categoryId = cat.id;
+      updateData.assetType = cat.type === 'music' ? 'MUSIC' : 'SFX';
     }
 
     // Non-admin: any edit to an approved sound requires re-review before going live
@@ -1316,7 +1348,7 @@ export class SoundsService {
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const result = await tx.soundEffect.update({
+      const result = await tx.audioAsset.update({
         where: { id: soundId },
         data: updateData,
         include: {
@@ -1329,10 +1361,13 @@ export class SoundsService {
       });
 
       if (dto.tags !== undefined) {
-        await tx.soundEffectOnTag.deleteMany({ where: { soundEffectId: soundId } });
-        if (dto.tags.length > 0) {
+        const tagSlugs: string[] = Array.isArray(dto.tags)
+          ? dto.tags
+          : (dto.tags as string).split(',').map(t => t.trim()).filter(Boolean);
+        await tx.audioAssetOnTag.deleteMany({ where: { audioAssetId: soundId } });
+        if (tagSlugs.length > 0) {
           const upserted = await Promise.all(
-            dto.tags.map((slug) =>
+            tagSlugs.map((slug) =>
               tx.tag.upsert({
                 where: { slug },
                 update: {},
@@ -1343,13 +1378,13 @@ export class SoundsService {
               }),
             ),
           );
-          await tx.soundEffectOnTag.createMany({
-            data: upserted.map((t) => ({ soundEffectId: soundId, tagId: t.id })),
+          await tx.audioAssetOnTag.createMany({
+            data: upserted.map((t) => ({ audioAssetId: soundId, tagId: t.id })),
           });
         }
       }
 
-      return tx.soundEffect.findUnique({
+      return tx.audioAsset.findUnique({
         where: { id: soundId },
         include: {
           category: true,
@@ -1364,7 +1399,7 @@ export class SoundsService {
     // TODO (BE-01): Replace with Prisma update after `prisma generate`.
     if (dto.bpm !== undefined || dto.mood !== undefined || dto.musicalKey !== undefined || dto.hasStems !== undefined) {
       await this.prisma.$executeRaw`
-        UPDATE sound_effects
+        UPDATE audio_assets
         SET bpm=${dto.bpm ?? null},
             mood=${dto.mood ?? null},
             "musicalKey"=${dto.musicalKey ?? null},
@@ -1383,7 +1418,7 @@ export class SoundsService {
       await this.syncTypedMetadata(soundId, updated.category.type, dto);
     }
 
-    return this.prisma.soundEffect.findUnique({
+    return this.prisma.audioAsset.findUnique({
       where: { id: soundId },
       include: {
         category: true,
@@ -1391,6 +1426,130 @@ export class SoundsService {
         musicMetadata: true,
         sfxMetadata: true,
         genres: { include: { genre: true } },
+      },
+    });
+  }
+
+  // ─── Resubmit rejected sound ─────────────────────────────────
+  async resubmitSound(
+    userId: string,
+    soundId: string,
+    dto: UpdateSoundDto,
+    file?: Express.Multer.File,
+  ) {
+    const sound = await this.prisma.audioAsset.findUnique({
+      where: { id: soundId },
+      include: { category: true },
+    });
+    if (!sound) throw new NotFoundException('Sound not found');
+    if (sound.authorId !== userId) {
+      throw new ForbiddenException('You do not own this sound');
+    }
+    if (sound.reviewStatus !== 'REJECTED') {
+      throw new BadRequestException('Only REJECTED sounds can be resubmitted');
+    }
+
+    const updateData: any = {
+      reviewStatus: 'PENDING',
+      reviewNote:   null,
+      isPublished:  false,
+    };
+
+    if (dto.title       !== undefined) {
+      updateData.title = dto.title;
+      if (dto.title !== sound.title) {
+        updateData.slug = await this.ensureUniqueSlug(this.toSlug(dto.title));
+      }
+    }
+    if (dto.description !== undefined) updateData.description = dto.description;
+    const price = this.parseOptionalInt(dto.price, 'price');
+    if (price           !== undefined) updateData.price       = price;
+    if (dto.accessLevel !== undefined) updateData.accessLevel = dto.accessLevel;
+
+    if (dto.categorySlug !== undefined) {
+      const cat = await this.prisma.category.findUnique({ where: { slug: dto.categorySlug } });
+      if (!cat) throw new BadRequestException('Category not found');
+      updateData.categoryId = cat.id;
+      updateData.assetType = cat.type === 'music' ? 'MUSIC' : 'SFX';
+    }
+
+    // Optional: replace audio file
+    if (file) {
+      const ext = (file.originalname.split('.').pop() ?? 'wav').toLowerCase();
+      const validFormats = ['wav', 'mp3', 'ogg', 'flac'];
+      if (!validFormats.includes(ext)) {
+        throw new BadRequestException(`Unsupported format: ${ext}. Use WAV, MP3, OGG, or FLAC.`);
+      }
+
+      const fileBuffer: Buffer = file.buffer ?? fs.readFileSync(file.path!);
+      let previewBuffer: Buffer = fileBuffer;
+      let waveformData: number[] = this.generateDefaultWaveform();
+      let durationMs = 0;
+
+      try { durationMs = await this.audio.getDuration(fileBuffer, ext); } catch {}
+      try {
+        const [preview, waveform] = await Promise.all([
+          this.audio.generatePreview(fileBuffer, ext),
+          this.audio.generateWaveform(fileBuffer, ext),
+        ]);
+        previewBuffer = preview;
+        waveformData  = waveform;
+      } catch (err: any) {
+        this.logger.warn(`FFmpeg unavailable during resubmit: ${err?.message}`);
+      }
+
+      const fileUrl    = await this.storage.uploadAudioFile(fileBuffer, file.originalname, file.mimetype);
+      const previewUrl = await this.storage.uploadPreviewFile(previewBuffer, soundId);
+
+      updateData.fileUrl      = fileUrl;
+      updateData.previewUrl   = previewUrl;
+      updateData.waveformData = waveformData;
+      updateData.durationMs   = durationMs;
+      updateData.fileSize     = file.size;
+      updateData.format       = ext;
+
+      if (file.path) { try { fs.unlinkSync(file.path); } catch {} }
+      if (durationMs === 0) this.recalculateDuration(soundId).catch(() => {});
+    }
+
+    await this.prisma.audioAsset.update({ where: { id: soundId }, data: updateData });
+
+    // Sync tags — normalize (FormData = string, JSON = string[])
+    if (dto.tags !== undefined) {
+      const tagSlugs: string[] = Array.isArray(dto.tags)
+        ? dto.tags
+        : (dto.tags as string).split(',').map(t => t.trim()).filter(Boolean);
+
+      await this.prisma.audioAssetOnTag.deleteMany({ where: { audioAssetId: soundId } });
+      for (const tagSlug of tagSlugs) {
+        const tag = await this.prisma.tag.upsert({
+          where:  { slug: tagSlug },
+          update: {},
+          create: { slug: tagSlug, name: tagSlug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) },
+        });
+        await this.prisma.audioAssetOnTag.upsert({
+          where:  { audioAssetId_tagId: { audioAssetId: soundId, tagId: tag.id } },
+          update: {},
+          create: { audioAssetId: soundId, tagId: tag.id },
+        });
+      }
+    }
+
+    // Sync typed metadata & genres
+    const catType = (updateData.categoryId
+      ? (await this.prisma.category.findUnique({ where: { id: updateData.categoryId } }))?.type
+      : sound.category?.type) ?? 'sfx';
+    await this.syncTypedMetadata(soundId, catType, dto);
+
+    return this.prisma.audioAsset.findUnique({
+      where: { id: soundId },
+      include: {
+        category: true,
+        tags: { include: { tag: true } },
+        musicMetadata: true,
+        sfxMetadata:   true,
+        genres: { include: { genre: true } },
+        author: { select: { id: true, name: true, avatarUrl: true } },
       },
     });
   }

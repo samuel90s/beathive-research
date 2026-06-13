@@ -287,11 +287,11 @@ export default function Navbar() {
               <div className="hidden md:flex items-center gap-2 ml-2">
                 <Link href="/auth/login"
                   className="px-4 py-1.5 text-[13px] text-[#8b8fa8] hover:text-white transition-colors rounded-lg hover:bg-white/[0.04]">
-                  Masuk
+                  Log In
                 </Link>
                 <Link href="/auth/register"
                   className="px-4 py-1.5 text-[13px] font-semibold bg-white text-black rounded-full hover:bg-white/90 transition-colors">
-                  Daftar Gratis
+                  Sign Up Free
                 </Link>
               </div>
             )}
@@ -421,7 +421,7 @@ export default function Navbar() {
                   <Link href="/dashboard/orders" onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b8fa8] hover:text-white hover:bg-white/[0.05] transition-colors">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                    Pesanan
+                    Orders
                   </Link>
                   <Link href="/wishlist" onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#8b8fa8] hover:text-white hover:bg-white/[0.05] transition-colors">

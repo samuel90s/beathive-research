@@ -1,6 +1,6 @@
 // src/app/studio/page.tsx
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -12,7 +12,8 @@ import { ordersApi } from '@/lib/api/orders';
 import { formatDuration, formatPrice, formatDate, mediaUrl } from '@/lib/utils';
 import { toast } from '@/lib/store/toast.store';
 import { API_URL } from '@/lib/config';
-import type { SoundEffect } from '@/types';
+import type { AudioAsset } from '@/types';
+import MultiChipSelect from '@/components/ui/MultiChipSelect';
 
 // ─── Constants ────────────────────────────────────────────
 
@@ -34,9 +35,8 @@ const REVIEW_STATUS: Record<string, { label: string; cls: string }> = {
   NEEDS_RE_REVIEW: { label: 'Needs Re-review', cls: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
 };
 
-const MUSICAL_KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B','Cm','C#m','Dm','D#m','Em','Fm','F#m','Gm','G#m','Am','A#m','Bm'];
-const MOODS = ['upbeat','calm','epic','sad','dark','happy','neutral','tense','romantic','mysterious'];
 const MUSIC_GENRES = ['cinematic','orchestral','trailer','ambient','lo-fi','edm','hip-hop','trap','acoustic','piano','corporate','rock','jazz'];
+const MUSIC_MOODS = ['upbeat','calm','epic','sad','dark','happy','neutral','tense','romantic','mysterious'];
 
 const WITHDRAWAL_STATUS: Record<string, { label: string; cls: string }> = {
   PENDING:  { label: 'Diproses',  cls: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
@@ -47,6 +47,7 @@ const WITHDRAWAL_STATUS: Record<string, { label: string; cls: string }> = {
 // ─── Tab types ────────────────────────────────────────────
 
 type StudioTab = 'sounds' | 'earnings' | 'analytics';
+type AssetKind = 'sfx' | 'music';
 
 // ─── Main Studio Page ─────────────────────────────────────
 
@@ -63,12 +64,20 @@ export default function StudioPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [fixingId, setFixingId] = useState<string | null>(null);
-  const [editSound, setEditSound] = useState<SoundEffect | null>(null);
-  const [editForm, setEditForm] = useState({ title: '', description: '', price: '0', accessLevel: 'FREE', categorySlug: '', tags: '', genres: '', bpm: '', mood: '', musicalKey: '', hasStems: false });
+  const [editSound, setEditSound] = useState<AudioAsset | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', description: '', price: '0', accessLevel: 'FREE', assetKind: 'sfx' as AssetKind, categorySlug: '', tags: '', genres: '', mood: '' });
   const [editError, setEditError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Resubmit state (for REJECTED sounds)
+  const [resubmitSound, setResubmitSound] = useState<AudioAsset | null>(null);
+  const [resubmitForm, setResubmitForm] = useState({ title: '', description: '', price: '0', accessLevel: 'FREE', assetKind: 'sfx' as AssetKind, categorySlug: '', tags: '', genres: '', mood: '' });
+  const [resubmitFile, setResubmitFile] = useState<File | null>(null);
+  const [resubmitError, setResubmitError] = useState<string | null>(null);
+  const [resubmitting, setResubmitting] = useState(false);
+  const resubmitFileRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [form, setFormState] = useState({ title: '', categorySlug: '', description: '', price: '0', accessLevel: 'FREE', licenseType: 'personal', tags: '', genres: '', bpm: '', mood: '', musicalKey: '', hasStems: false });
+  const [form, setFormState] = useState({ title: '', assetKind: 'sfx' as AssetKind, categorySlug: '', description: '', price: '0', accessLevel: 'FREE', licenseType: 'personal', tags: '', genres: '', mood: '' });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Earnings state
@@ -90,7 +99,7 @@ export default function StudioPage() {
     queryKey: ['my-sounds'],
     queryFn: async () => {
       const { data } = await apiClient.get('/sounds/mine');
-      return (data.items ?? []) as SoundEffect[];
+      return (data.items ?? []) as AudioAsset[];
     },
     enabled: isAuthenticated,
     staleTime: 30_000,
@@ -131,52 +140,70 @@ export default function StudioPage() {
 
   const sounds = soundsData ?? [];
   const paidOrders = orders?.filter((o) => o.status === 'PAID') ?? [];
+  const categoriesByType = (kind: AssetKind) => categories.filter(c => c.type === kind);
+  const getAssetKind = (sound: AudioAsset): AssetKind =>
+    sound.assetType === 'MUSIC' || sound.category?.type === 'music' ? 'music' : 'sfx';
+  const clearMusicFields = { genres: '', mood: '' };
+  const chooseAssetKind = <T extends typeof form | typeof editForm | typeof resubmitForm>(kind: AssetKind, current: T) => ({
+    ...current,
+    assetKind: kind,
+    categorySlug: '',
+    ...(kind === 'sfx' ? clearMusicFields : {}),
+  });
 
   if (!isAuthenticated || !user) return null;
 
   // ── Sound handlers ─────────────────────────────────────
 
-  const fixDuration = async (sound: SoundEffect) => {
+  const fixDuration = async (sound: AudioAsset) => {
     setFixingId(sound.id);
     try {
       const { data } = await apiClient.post(`/sounds/${sound.id}/recalculate-duration`);
       if (data.durationMs > 0) {
-        queryClient.setQueryData<SoundEffect[]>(['my-sounds'], prev =>
+        queryClient.setQueryData<AudioAsset[]>(['my-sounds'], prev =>
           prev?.map(s => s.id === sound.id ? { ...s, durationMs: data.durationMs } : s) ?? []);
       }
     } catch { toast.error('Gagal menghitung ulang durasi'); }
     finally { setFixingId(null); }
   };
 
-  const openEdit = (sound: SoundEffect) => {
+  const openEdit = (sound: AudioAsset) => {
     setEditSound(sound); setEditError(null);
     setEditForm({
       title: sound.title, description: sound.description || '',
       price: String(sound.price ?? 0), accessLevel: sound.accessLevel || 'FREE',
+      assetKind: getAssetKind(sound),
       categorySlug: sound.category?.slug || '',
       tags: (sound.tags?.map((t: any) => t.tag?.slug ?? t.slug ?? t.name ?? t) ?? []).join(', '),
       genres: (sound.genres?.map((g: any) => g.slug ?? g.name ?? g) ?? []).join(', '),
-      bpm: sound.bpm ? String(sound.bpm) : '', mood: sound.mood || '',
-      musicalKey: sound.musicalKey || '', hasStems: sound.hasStems ?? false,
+      mood: sound.mood || '',
+
     });
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!editSound) return;
+    // Validasi
+    if (!editForm.title.trim()) { setEditError('Judul wajib diisi'); return; }
+    if (editForm.title.trim().length > 120) { setEditError('Judul maksimal 120 karakter'); return; }
+    const editPriceNum = parseInt(editForm.price, 10);
+    if (isNaN(editPriceNum) || editPriceNum < 0) { setEditError('Harga harus berupa angka bulat non-negatif'); return; }
+    if (editPriceNum > 10_000_000) { setEditError('Harga maksimal Rp 10.000.000'); return; }
+    if (editForm.accessLevel === 'PURCHASE' && editPriceNum <= 0) { setEditError('Harga harus lebih dari 0 untuk mode Paid'); return; }
     setSaving(true); setEditError(null);
     try {
       const tagSlugs = editForm.tags.split(',').map(t => t.trim().toLowerCase().replace(/\s+/g, '-')).filter(Boolean);
       const body: any = {
-        title: editForm.title.trim(), description: editForm.description,
-        price: Number(editForm.price), accessLevel: editForm.accessLevel,
+        title: editForm.title.trim().slice(0, 120),
+        description: editForm.description.slice(0, 2000),
+        price: editPriceNum,
+        accessLevel: editForm.accessLevel,
         categorySlug: editForm.categorySlug || editSound.category?.slug, tags: tagSlugs,
         genres: editForm.genres.split(',').map(g => g.trim().toLowerCase().replace(/\s+/g, '-')).filter(Boolean),
-        bpm: editForm.bpm ? Number(editForm.bpm) : undefined,
-        mood: editForm.mood || undefined, musicalKey: editForm.musicalKey || undefined,
-        hasStems: editForm.hasStems,
+        mood: editForm.mood || undefined,
       };
       const { data } = await apiClient.patch(`/sounds/${editSound.id}`, body);
-      queryClient.setQueryData<SoundEffect[]>(['my-sounds'], prev =>
+      queryClient.setQueryData<AudioAsset[]>(['my-sounds'], prev =>
         prev?.map(s => s.id === editSound.id ? { ...s, ...data, tags: data.tags ?? s.tags } : s) ?? []);
       setEditSound(null); toast.success('Perubahan berhasil disimpan');
     } catch (err: any) {
@@ -185,10 +212,106 @@ export default function StudioPage() {
     } finally { setSaving(false); }
   };
 
-  const setEdit = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setEditForm(f => ({ ...f, [key]: e.target.value }));
-  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setFormState(f => ({ ...f, [key]: e.target.value }));
+  // ── Sanitasi helper ───────────────────────────────────
+  // Hanya izinkan angka bulat non-negatif untuk field harga
+  const sanitizePrice = (raw: string): string => {
+    const cleaned = raw.replace(/[^0-9]/g, ''); // hapus semua bukan digit
+    const num = parseInt(cleaned, 10);
+    if (isNaN(num)) return '0';
+    if (num > 10_000_000) return '10000000'; // batas maksimum
+    return String(num);
+  };
+
+  // Sanitasi teks (hapus karakter berbahaya untuk XSS)
+  const sanitizeText = (raw: string, maxLen = 200): string =>
+    raw.replace(/[<>"'`]/g, '').slice(0, maxLen);
+
+  // Sanitasi tags (hanya huruf, angka, koma, spasi, strip)
+  const sanitizeTags = (raw: string): string =>
+    raw.replace(/[^a-zA-Z0-9,\s\-]/g, '').slice(0, 300);
+
+  const setEdit = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    let val = e.target.value;
+    if (key === 'price') val = sanitizePrice(val);
+    else if (key === 'title') val = sanitizeText(val, 120);
+    else if (key === 'description') val = sanitizeText(val, 2000);
+    else if (key === 'tags') val = sanitizeTags(val);
+    setEditForm(f => ({ ...f, [key]: val }));
+  };
+  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    let val = e.target.value;
+    if (key === 'price') val = sanitizePrice(val);
+    else if (key === 'title') val = sanitizeText(val, 120);
+    else if (key === 'description') val = sanitizeText(val, 2000);
+    else if (key === 'tags') val = sanitizeTags(val);
+    setFormState(f => ({ ...f, [key]: val }));
+  };
+  const setResubmit = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    let val = e.target.value;
+    if (key === 'price') val = sanitizePrice(val);
+    else if (key === 'title') val = sanitizeText(val, 120);
+    else if (key === 'description') val = sanitizeText(val, 2000);
+    else if (key === 'tags') val = sanitizeTags(val);
+    setResubmitForm(f => ({ ...f, [key]: val }));
+  };
+
+  const openResubmit = (sound: AudioAsset) => {
+    setResubmitSound(sound);
+    setResubmitFile(null);
+    setResubmitError(null);
+    setResubmitForm({
+      title: sound.title,
+      description: sound.description || '',
+      price: String(sound.price ?? 0),
+      accessLevel: sound.accessLevel || 'FREE',
+      assetKind: getAssetKind(sound),
+      categorySlug: sound.category?.slug || '',
+      tags: (sound.tags?.map((t: any) => t.tag?.slug ?? t.slug ?? t.name ?? t) ?? []).join(', '),
+      genres: (sound.genres?.map((g: any) => g.slug ?? g.name ?? g) ?? []).join(', '),
+      mood: sound.mood || '',
+
+    });
+  };
+
+  const handleResubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resubmitSound) return;
+    // Validasi
+    if (!resubmitForm.title.trim()) { setResubmitError('Judul wajib diisi'); return; }
+    if (resubmitForm.title.trim().length > 120) { setResubmitError('Judul maksimal 120 karakter'); return; }
+    const resubmitPriceNum = parseInt(resubmitForm.price, 10);
+    if (isNaN(resubmitPriceNum) || resubmitPriceNum < 0) { setResubmitError('Harga harus berupa angka bulat non-negatif'); return; }
+    if (resubmitPriceNum > 10_000_000) { setResubmitError('Harga maksimal Rp 10.000.000'); return; }
+    if (resubmitForm.accessLevel === 'PURCHASE' && resubmitPriceNum <= 0) { setResubmitError('Harga harus lebih dari 0 untuk mode Paid'); return; }
+    setResubmitting(true);
+    setResubmitError(null);
+    try {
+      const formData = new FormData();
+      if (resubmitFile) formData.append('file', resubmitFile);
+      formData.append('title', resubmitForm.title.trim().slice(0, 120));
+      formData.append('description', resubmitForm.description.slice(0, 2000));
+      formData.append('price', String(resubmitPriceNum));
+      formData.append('accessLevel', resubmitForm.accessLevel);
+      formData.append('categorySlug', resubmitForm.categorySlug || resubmitSound.category?.slug || '');
+      const tagSlugs = resubmitForm.tags.split(',').map(t => t.trim().toLowerCase().replace(/\s+/g, '-')).filter(Boolean);
+      if (tagSlugs.length) formData.append('tags', tagSlugs.join(','));
+      if (resubmitForm.genres.trim()) formData.append('genres', resubmitForm.genres.trim());
+      if (resubmitForm.mood) formData.append('mood', resubmitForm.mood);
+
+      const { data } = await apiClient.patch(`/sounds/${resubmitSound.id}/resubmit`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      queryClient.setQueryData<AudioAsset[]>(['my-sounds'], prev =>
+        prev?.map(s => s.id === resubmitSound.id ? { ...s, ...data } : s) ?? []);
+      setResubmitSound(null);
+      toast.success('Sound berhasil disubmit ulang! Menunggu review admin.');
+    } catch (err: any) {
+      const msg = err.response?.data?.message;
+      setResubmitError(Array.isArray(msg) ? msg.join(', ') : msg || 'Gagal submit ulang. Coba lagi.');
+    } finally {
+      setResubmitting(false);
+    }
+  };
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -205,29 +328,36 @@ export default function StudioPage() {
     e.preventDefault();
     if (!selectedFile) { setUploadError('Pilih file audio terlebih dahulu'); return; }
     if (!form.title.trim()) { setUploadError('Judul wajib diisi'); return; }
+    if (form.title.trim().length > 120) { setUploadError('Judul maksimal 120 karakter'); return; }
     if (!form.categorySlug) { setUploadError('Pilih kategori terlebih dahulu'); return; }
+    // Validasi harga: harus angka bulat non-negatif
+    const priceNum = parseInt(form.price, 10);
+    if (isNaN(priceNum) || priceNum < 0 || String(priceNum) !== form.price.replace(/^0+(?=\d)/, '')) {
+      setUploadError('Harga harus berupa angka bulat (misal: 15000)');
+      return;
+    }
+    if (priceNum > 10_000_000) { setUploadError('Harga maksimal Rp 10.000.000'); return; }
+    if (form.accessLevel === 'PURCHASE' && priceNum <= 0) { setUploadError('Harga harus lebih dari 0 untuk mode Paid'); return; }
     setUploading(true); setUploadError(null);
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('title', form.title.trim());
+      formData.append('title', form.title.trim().slice(0, 120));
       formData.append('categorySlug', form.categorySlug);
-      formData.append('description', form.description);
-      formData.append('price', form.price);
+      formData.append('description', form.description.slice(0, 2000));
+      formData.append('price', String(priceNum));
       formData.append('accessLevel', form.accessLevel);
       formData.append('licenseType', form.licenseType);
-      if (form.tags.trim()) formData.append('tags', form.tags.trim());
+      if (form.tags.trim()) formData.append('tags', sanitizeTags(form.tags));
       if (form.genres.trim()) formData.append('genres', form.genres.trim());
-      if (form.bpm) formData.append('bpm', form.bpm);
       if (form.mood) formData.append('mood', form.mood);
-      if (form.musicalKey) formData.append('musicalKey', form.musicalKey);
-      if (form.hasStems) formData.append('hasStems', 'true');
+
       const { data } = await apiClient.post('/sounds/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      queryClient.setQueryData<SoundEffect[]>(['my-sounds'], prev => [data, ...(prev ?? [])]);
+      queryClient.setQueryData<AudioAsset[]>(['my-sounds'], prev => [data, ...(prev ?? [])]);
       setUploadSuccess(true); setShowModal(false);
-      setFormState({ title: '', categorySlug: '', description: '', price: '0', accessLevel: 'FREE', licenseType: 'personal', tags: '', genres: '', bpm: '', mood: '', musicalKey: '', hasStems: false });
+      setFormState({ title: '', assetKind: 'sfx', categorySlug: '', description: '', price: '0', accessLevel: 'FREE', licenseType: 'personal', tags: '', genres: '', mood: '' });
       setSelectedFile(null);
       toast.success('Sound berhasil diupload! Menunggu review admin.');
       setTimeout(() => setUploadSuccess(false), 4000);
@@ -261,12 +391,10 @@ export default function StudioPage() {
 
   const sub = user.subscription;
   const subExpiresAt = sub?.currentPeriodEnd ? new Date(sub.currentPeriodEnd) : null;
-  const liveCount = sounds.filter(s => s.reviewStatus === 'APPROVED').length;
-  const pendingCount = sounds.filter(s => s.reviewStatus === 'PENDING' || s.reviewStatus === 'NEEDS_RE_REVIEW').length;
-  const planColor = subscription?.plan.slug === 'pro' ? 'orange' : 'gray';
 
   return (
     <div className="px-8 py-8 pb-28">
+
 
       {/* ── Confirm modal ── */}
       {confirmModal && (
@@ -281,106 +409,58 @@ export default function StudioPage() {
         </div>
       )}
 
-      {/* ── Overview Header ── */}
-      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center">
-        <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center text-accent-bright text-xl font-bold overflow-hidden ring-2 ring-accent/20 flex-shrink-0">
+      {/* ── Header ── */}
+      <div className="flex flex-col gap-4 mb-5 sm:flex-row sm:items-center">
+        <div className="w-11 h-11 rounded-full bg-accent/20 flex items-center justify-center text-accent-bright text-lg font-bold overflow-hidden ring-2 ring-accent/20 flex-shrink-0">
           {user.avatarUrl
             ? <img src={mediaUrl(user.avatarUrl) ?? ''} alt="avatar" className="w-full h-full object-cover" />
             : user.name?.[0]?.toUpperCase()}
         </div>
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-white truncate">{user.name}</h1>
-          <p className="text-sm text-[#5a5d72] truncate">{user.email}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-white truncate">{user.name}</h1>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+              subscription?.plan.slug === 'pro'
+                ? 'bg-accent/15 text-accent-bright border-accent/30'
+                : 'bg-white/[0.05] text-[#6b6f82] border-white/[0.06]'
+            }`}>
+              {subscription?.plan.name ?? 'Free'}
+            </span>
+            {subscription?.plan.slug === 'free' && (
+              <Link href="/pricing" className="text-[10px] text-accent-bright hover:underline">Upgrade</Link>
+            )}
+          </div>
+          <div className="flex items-center gap-3 mt-0.5 text-xs text-[#5a5d72]">
+            <span className="truncate">{user.email}</span>
+            {subscription && !subscription.plan.unlimited && subscription.usage && (
+              <>
+                <span className="text-[#2a2c3e]">·</span>
+                <span>Download {subscription.usage.downloadsThisMonth}/{subscription.plan.downloadLimit}</span>
+              </>
+            )}
+          </div>
         </div>
-        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-          <Link href="/profile" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[#6b6f82] hover:text-white border border-rim hover:border-white/10 rounded-xl transition-all">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Edit Profil
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Link href="/profile" className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#6b6f82] hover:text-white border border-rim hover:border-white/10 rounded-xl transition-all">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Profil
           </Link>
           <button
             onClick={() => { setShowModal(true); setUploadError(null); setUploadSuccess(false); setActiveTab('sounds'); }}
-            className="ml-auto flex items-center gap-1.5 px-4 py-1.5 btn-accent rounded-xl text-sm font-semibold sm:ml-0"
+            className="flex items-center gap-1.5 px-4 py-1.5 btn-accent rounded-xl text-xs font-semibold"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            Upload Sound
+            Upload
           </button>
         </div>
       </div>
 
-      {/* ── Quick stats ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        {[
-          { label: 'Sound Live', value: liveCount, color: 'text-teal-400' },
-          { label: 'Pembelian', value: paidOrders.length, color: 'text-white' },
-          { label: 'Total Earning', value: formatPrice(wallet?.totalEarned ?? 0), color: 'text-accent-bright' },
-          { label: 'Saldo', value: formatPrice(wallet?.balance ?? 0), color: 'text-teal-400' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="card rounded-2xl p-4">
-            <p className="text-xs text-[#5a5d72] mb-1">{label}</p>
-            <p className={`text-xl font-bold leading-tight ${color}`}>{value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Subscription card ── */}
-      <div className="card rounded-2xl p-4 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${planColor === 'orange' ? 'bg-accent/20' : 'bg-white/[0.05]'}`}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke={planColor === 'orange' ? '#F7941D' : '#6b7280'}
-                strokeWidth="2">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white">{subscription?.plan.name ?? 'Free'} Plan</p>
-              {subscription?.status === 'ACTIVE' && subscription.plan.slug !== 'free' && (
-                <p className="text-xs text-[#5a5d72]">Aktif sampai {formatDate(subscription.currentPeriodEnd)}</p>
-              )}
-            </div>
-          </div>
-          {subscription && !subscription.plan.unlimited && subscription.usage && (
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between mb-1">
-                <span className="text-xs text-[#5a5d72]">Download bulan ini</span>
-                <span className="text-xs text-[#8b8fa8]">{subscription.usage.downloadsThisMonth} / {subscription.plan.downloadLimit}</span>
-              </div>
-              <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all ${subscription.usage.downloadsThisMonth / subscription.plan.downloadLimit > 0.8 ? 'bg-amber-500' : 'bg-accent'}`}
-                  style={{ width: `${Math.min(100, (subscription.usage.downloadsThisMonth / subscription.plan.downloadLimit) * 100)}%` }} />
-              </div>
-            </div>
-          )}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {subscription?.plan.slug === 'free' && (
-              <Link href="/pricing" className="px-3 py-1.5 text-xs font-medium btn-accent rounded-lg">Upgrade</Link>
-            )}
-            {subscription?.plan.slug !== 'free' && subscription?.status === 'ACTIVE' && (
-              <button onClick={() => setConfirmModal({
-                message: 'Batalkan subscription? Akses tetap aktif sampai akhir periode billing.',
-                onConfirm: async () => {
-                  try {
-                    const token = accessToken || sessionStorage.getItem('accessToken');
-                    const res = await fetch(`${API_URL}/subscriptions/me`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-                    if (res.ok) { queryClient.invalidateQueries({ queryKey: ['subscription'] }); toast.success('Subscription dibatalkan.'); }
-                    else toast.error('Gagal membatalkan subscription');
-                  } catch { toast.error('Gagal membatalkan subscription'); }
-                },
-              })}
-                className="px-3 py-1.5 text-xs border border-rim text-[#6b6f82] hover:text-red-400 hover:border-red-500/30 rounded-lg transition-colors"
-              >Batalkan</button>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* ── Tab navigation ── */}
-      <div className="sticky top-0 z-10 -mx-8 mb-6 flex items-center gap-1 overflow-x-auto border-b border-[#1a1b2e] bg-base/95 px-8 backdrop-blur scrollbar-none">
+      <div className="sticky top-0 z-10 -mx-8 mb-5 flex items-center gap-1 overflow-x-auto border-b border-[#1a1b2e] bg-base/95 px-8 backdrop-blur scrollbar-none">
         {([
-          { id: 'sounds', label: 'Sounds', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> },
+          { id: 'sounds', label: `Sounds${sounds.length ? ` (${sounds.length})` : ''}`, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> },
           { id: 'earnings', label: 'Earnings', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
           { id: 'analytics', label: 'Analytics', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
         ] as { id: StudioTab; label: string; icon: React.ReactNode }[]).map(tab => (
@@ -404,22 +484,6 @@ export default function StudioPage() {
       {/* ══════════════════════════════════════════════════ */}
       {activeTab === 'sounds' && (
         <>
-          {/* Stats row */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            {[
-              { label: 'Total Sound', value: sounds.length, color: 'text-white', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b8fa8" strokeWidth="1.5" strokeLinecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> },
-              { label: 'Live', value: liveCount, color: 'text-teal-400', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00A79D" strokeWidth="1.5" strokeLinecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> },
-              { label: 'Menunggu Review', value: pendingCount, color: 'text-amber-400', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-            ].map(({ label, value, color, icon }) => (
-              <div key={label} className="card rounded-2xl p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center flex-shrink-0">{icon}</div>
-                <div>
-                  <p className="text-xs text-[#5a5d72] mb-0.5">{label}</p>
-                  <p className={`text-2xl font-bold leading-none ${color}`}>{value}</p>
-                </div>
-              </div>
-            ))}
-          </div>
 
           {uploadSuccess && (
             <div className="mb-4 px-4 py-3 bg-teal-500/10 border border-teal-500/20 text-teal-400 text-sm rounded-xl flex items-center gap-2">
@@ -450,6 +514,9 @@ export default function StudioPage() {
             <div className="rounded-2xl border border-[#1e2030] overflow-hidden">
               {sounds.map((sound, idx) => {
                 const status = REVIEW_STATUS[sound.reviewStatus || 'PENDING'] ?? REVIEW_STATUS.PENDING;
+                const isMusic = getAssetKind(sound) === 'music';
+                const musicMood = sound.mood ?? sound.musicMetadata?.mood;
+                const musicGenre = sound.genres?.[0]?.name;
                 return (
                   <div key={sound.id}>
                     <div className={`flex items-center gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors ${idx > 0 ? 'border-t border-[#1a1b2e]' : ''} ${sound.reviewStatus === 'REJECTED' ? 'border-l-2 border-l-red-500/40' : ''}`}>
@@ -464,6 +531,16 @@ export default function StudioPage() {
                           <span className="text-xs text-[#3a3c4e] font-mono uppercase">{sound.format}</span>
                           <span className="text-[#2a2c3e]">·</span>
                           <span className="text-xs text-[#3a3c4e]">{formatDuration(sound.durationMs)}</span>
+                          {isMusic && musicMood && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal/10 text-teal border border-teal/20 capitalize">
+                              {musicMood}
+                            </span>
+                          )}
+                          {isMusic && musicGenre && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent-bright border border-accent/20">
+                              {musicGenre}
+                            </span>
+                          )}
                           {sound.durationMs === 0 && (
                             <button onClick={() => fixDuration(sound)} disabled={fixingId === sound.id} className="text-amber-400 hover:underline text-[11px] ml-0.5">
                               {fixingId === sound.id ? 'memproses...' : 'fix durasi'}
@@ -477,9 +554,19 @@ export default function StudioPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className={`text-[11px] px-2.5 py-1 rounded-full border font-medium ${status.cls}`}>{status.label}</span>
-                        <button onClick={() => openEdit(sound)} className="w-8 h-8 rounded-lg border border-[#1e2030] text-[#5a5d72] hover:text-white hover:border-[#2a2c3e] flex items-center justify-center transition-all">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                        </button>
+                        {sound.reviewStatus === 'REJECTED' ? (
+                          <button
+                            onClick={() => openResubmit(sound)}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/30 text-accent-bright text-xs font-medium hover:bg-accent/20 transition-all"
+                          >
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                            Edit & Resubmit
+                          </button>
+                        ) : (
+                          <button onClick={() => openEdit(sound)} className="w-8 h-8 rounded-lg border border-[#1e2030] text-[#5a5d72] hover:text-white hover:border-[#2a2c3e] flex items-center justify-center transition-all">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </button>
+                        )}
                       </div>
                     </div>
                     {sound.reviewStatus === 'REJECTED' && sound.reviewNote && (
@@ -592,21 +679,186 @@ export default function StudioPage() {
       {activeTab === 'analytics' && <StudioAnalyticsPanel />}
 
       {/* ══════════════════════════════════════════════════ */}
-      {/* ── Edit Sound Modal ── */}
+      {/* ── Resubmit Modal (REJECTED sounds only) ── */}
+      {resubmitSound && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="card-lift rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 border border-rim shadow-elevated">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-base font-semibold text-white">Edit & Resubmit</h2>
+                <p className="text-xs text-[#5a5d72] mt-0.5">Perbaiki sound lalu submit ulang untuk direview</p>
+              </div>
+              <button onClick={() => setResubmitSound(null)} className="text-[#4a4d5e] hover:text-[#8b8fa8] text-xl leading-none">&times;</button>
+            </div>
+
+            {/* Rejection reason banner */}
+            {resubmitSound.reviewNote && (
+              <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
+                <svg className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div>
+                  <p className="text-xs font-semibold text-red-400 mb-0.5">Alasan penolakan admin:</p>
+                  <p className="text-sm text-red-300">{resubmitSound.reviewNote}</p>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleResubmit} className="space-y-4">
+              {/* Optional new audio file */}
+              <div>
+                <label className={labelCls}>Ganti File Audio <span className="text-[#4a4d5e] font-normal">(opsional — biarkan kosong jika tidak diganti)</span></label>
+                <div
+                  onClick={() => resubmitFileRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
+                    resubmitFile ? 'border-accent/60 bg-accent/[0.06]' : 'border-rim hover:border-accent/30 hover:bg-accent/[0.04]'
+                  }`}
+                >
+                  <input ref={resubmitFileRef} type="file" accept="audio/*" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) setResubmitFile(f); }} />
+                  {resubmitFile ? (
+                    <div>
+                      <p className="text-sm font-medium text-accent-bright">{resubmitFile.name}</p>
+                      <p className="text-xs text-[#5a5d72] mt-0.5">{(resubmitFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 text-[#5a5d72]">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      <span className="text-xs">Klik untuk pilih file baru · WAV, MP3, OGG, FLAC</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>Judul * <span className="text-[#4a4d5e] font-normal">({resubmitForm.title.length}/120)</span></label>
+                <input type="text" value={resubmitForm.title} onChange={setResubmit('title')} required maxLength={120} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Jenis Asset *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['sfx', 'music'] as AssetKind[]).map(kind => (
+                    <button
+                      key={kind}
+                      type="button"
+                      onClick={() => setResubmitForm(f => chooseAssetKind(kind, f))}
+                      className={`py-2 rounded-xl text-sm font-medium border transition-colors ${
+                        resubmitForm.assetKind === kind
+                          ? 'bg-accent text-white border-accent'
+                          : 'bg-lift text-[#8b8fa8] border-rim hover:text-white'
+                      }`}
+                    >
+                      {kind === 'sfx' ? 'SFX' : 'Music'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Kategori *</label>
+                <select value={resubmitForm.categorySlug} onChange={setResubmit('categorySlug')} required className={`${inputCls} bg-lift`}>
+                  <option value="" disabled>Pilih Kategori...</option>
+                  {categoriesByType(resubmitForm.assetKind).map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+                </select>
+              </div>
+              <div><label className={labelCls}>Deskripsi</label><textarea value={resubmitForm.description} onChange={setResubmit('description')} rows={2} className={`${inputCls} resize-none`} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Akses</label>
+                  <select value={resubmitForm.accessLevel} onChange={setResubmit('accessLevel')} className={`${inputCls} bg-lift`}>
+                    <option value="FREE">Free</option>
+                    <option value="PRO">Pro</option>
+                    <option value="PURCHASE">Paid</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Harga (Rp)</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="10000000"
+                    value={resubmitForm.price}
+                    onChange={setResubmit('price')}
+                    disabled={resubmitForm.accessLevel !== 'PURCHASE'}
+                    placeholder="cth. 15000"
+                    className={inputCls}
+                  />
+                  {resubmitForm.accessLevel === 'PURCHASE' && resubmitForm.price !== '' && !/^\d+$/.test(resubmitForm.price) && (
+                    <p className="text-[10px] text-red-400 mt-1">⚠ Hanya angka yang diizinkan</p>
+                  )}
+                </div>
+              </div>
+              <div><label className={labelCls}>Tags</label><input type="text" value={resubmitForm.tags} onChange={setResubmit('tags')} placeholder="impact, cinematic, whoosh" className={inputCls} /></div>
+              {resubmitForm.assetKind === 'music' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-rim">
+                  <p className="text-xs font-semibold text-accent-bright sm:col-span-2">Detail Musik</p>
+                  <div className="sm:col-span-2">
+                    <label className={labelCls}>Genre</label>
+                    <MultiChipSelect
+                      options={MUSIC_GENRES}
+                      selected={resubmitForm.genres ? resubmitForm.genres.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      onChange={sel => setResubmitForm(f => ({ ...f, genres: sel.join(', ') }))}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelCls}>Mood</label>
+                    <MultiChipSelect
+                      options={MUSIC_MOODS}
+                      selected={resubmitForm.mood ? resubmitForm.mood.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      onChange={sel => setResubmitForm(f => ({ ...f, mood: sel.join(', ') }))}
+                    />
+                  </div>
+
+                </div>
+              )}
+              {resubmitError && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{resubmitError}</p>}
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setResubmitSound(null)} className="flex-1 py-2.5 btn-ghost rounded-xl text-sm font-medium">Batal</button>
+                <button type="submit" disabled={resubmitting} className="flex-1 py-2.5 btn-accent rounded-xl text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+                  {resubmitting ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Mengirim...</> : 'Submit Ulang'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
       {editSound && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className="card-lift rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 border border-rim shadow-elevated">
+          <div className="card-lift rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 border border-rim shadow-elevated">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-white">Edit Sound</h2>
+              <h2 className="text-base font-semibold text-white">Edit Audio</h2>
               <button onClick={() => setEditSound(null)} className="text-[#4a4d5e] hover:text-[#8b8fa8] text-xl leading-none">&times;</button>
             </div>
             <form onSubmit={handleSaveEdit} className="space-y-4">
-              <div><label className={labelCls}>Judul *</label><input type="text" value={editForm.title} onChange={setEdit('title')} required className={inputCls} /></div>
+              <div>
+                <label className={labelCls}>Judul * <span className="text-[#4a4d5e] font-normal">({editForm.title.length}/120)</span></label>
+                <input type="text" value={editForm.title} onChange={setEdit('title')} required maxLength={120} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Jenis Asset *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['sfx', 'music'] as AssetKind[]).map(kind => (
+                    <button
+                      key={kind}
+                      type="button"
+                      onClick={() => setEditForm(f => chooseAssetKind(kind, f))}
+                      className={`py-2 rounded-xl text-sm font-medium border transition-colors ${
+                        editForm.assetKind === kind
+                          ? 'bg-accent text-white border-accent'
+                          : 'bg-lift text-[#8b8fa8] border-rim hover:text-white'
+                      }`}
+                    >
+                      {kind === 'sfx' ? 'SFX' : 'Music'}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div>
                 <label className={labelCls}>Kategori *</label>
                 <select value={editForm.categorySlug} onChange={setEdit('categorySlug')} required className={`${inputCls} bg-lift`}>
                   <option value="" disabled>Pilih Kategori...</option>
-                  {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+                  {categoriesByType(editForm.assetKind).map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                 </select>
               </div>
               <div><label className={labelCls}>Deskripsi</label><textarea value={editForm.description} onChange={setEdit('description')} rows={2} className={`${inputCls} resize-none`} /></div>
@@ -614,53 +866,51 @@ export default function StudioPage() {
                 <div>
                   <label className={labelCls}>Akses</label>
                   <select value={editForm.accessLevel} onChange={setEdit('accessLevel')} className={`${inputCls} bg-lift`}>
-                    <option value="FREE">Free</option><option value="PRO">Pro</option><option value="PURCHASE">Purchase</option>
+                    <option value="FREE">Free</option>
+                    <option value="PRO">Pro</option>
+                    <option value="PURCHASE">Paid</option>
                   </select>
                 </div>
                 <div>
                   <label className={labelCls}>Harga (Rp)</label>
-                  <input type="number" value={editForm.price} onChange={setEdit('price')} min="0" step="1000" disabled={editForm.accessLevel === 'FREE'} className={`${inputCls} disabled:opacity-40`} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="10000000"
+                    value={editForm.price}
+                    onChange={setEdit('price')}
+                    disabled={editForm.accessLevel !== 'PURCHASE'}
+                    placeholder="cth. 15000"
+                    className={inputCls}
+                  />
+                  {editForm.accessLevel === 'PURCHASE' && editForm.price !== '' && !/^\d+$/.test(editForm.price) && (
+                    <p className="text-[10px] text-red-400 mt-1">⚠ Hanya angka yang diizinkan</p>
+                  )}
                 </div>
               </div>
-              <div><label className={labelCls}>Tags</label><input type="text" value={editForm.tags} onChange={setEdit('tags')} placeholder="impact, metal, heavy" className={inputCls} /></div>
-              {categories.find(c => c.slug === (editForm.categorySlug || editSound?.category?.slug))?.type === 'music' && (
-                <div className="space-y-3 pt-1 border-t border-rim">
-                  <p className="text-xs font-semibold text-accent-bright">Detail Musik</p>
-                  <div>
+              <div><label className={labelCls}>Tags</label><input type="text" value={editForm.tags} onChange={setEdit('tags')} placeholder="impact, cinematic, whoosh" className={inputCls} /></div>
+              {editForm.assetKind === 'music' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-rim">
+                  <p className="text-xs font-semibold text-accent-bright sm:col-span-2">Detail Musik</p>
+                  <div className="sm:col-span-2">
                     <label className={labelCls}>Genre</label>
-                    <input
-                      type="text"
-                      value={editForm.genres}
-                      onChange={setEdit('genres')}
-                      placeholder="cinematic, orchestral, trailer"
-                      list="music-genres"
-                      className={inputCls}
+                    <MultiChipSelect
+                      options={MUSIC_GENRES}
+                      selected={editForm.genres ? editForm.genres.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      onChange={sel => setEditForm(f => ({ ...f, genres: sel.join(', ') }))}
                     />
-                    <datalist id="music-genres">
-                      {MUSIC_GENRES.map(g => <option key={g} value={g} />)}
-                    </datalist>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className={labelCls}>BPM</label><input type="number" value={editForm.bpm} onChange={setEdit('bpm')} min="1" max="300" placeholder="120" className={inputCls} /></div>
-                    <div>
-                      <label className={labelCls}>Nada</label>
-                      <select value={editForm.musicalKey} onChange={setEdit('musicalKey')} className={`${inputCls} bg-lift`}>
-                        <option value="">— Pilih —</option>
-                        {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <label className={labelCls}>Mood</label>
-                    <select value={editForm.mood} onChange={setEdit('mood')} className={`${inputCls} bg-lift`}>
-                      <option value="">— Pilih —</option>
-                      {MOODS.map(m => <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
-                    </select>
+                    <MultiChipSelect
+                      options={MUSIC_MOODS}
+                      selected={editForm.mood ? editForm.mood.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      onChange={sel => setEditForm(f => ({ ...f, mood: sel.join(', ') }))}
+                    />
                   </div>
-                  <label className="flex items-center gap-2.5 cursor-pointer">
-                    <input type="checkbox" checked={editForm.hasStems} onChange={e => setEditForm(f => ({ ...f, hasStems: e.target.checked }))} className="w-4 h-4 rounded accent-orange-500" />
-                    <span className="text-sm text-[#c4c6d8]">Termasuk stems / track terpisah</span>
-                  </label>
+
                 </div>
               )}
               {editForm.accessLevel !== 'FREE' && <p className="text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">Mengubah harga atau akses akan mereset status review ke Pending.</p>}
@@ -679,9 +929,9 @@ export default function StudioPage() {
       {/* ── Upload Modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className="card-lift rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 border border-rim shadow-elevated">
+          <div className="card-lift rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 border border-rim shadow-elevated">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-white">Upload Sound Effect</h2>
+              <h2 className="text-base font-semibold text-white">Upload Audio</h2>
               <button onClick={() => setShowModal(false)} className="text-[#4a4d5e] hover:text-[#8b8fa8] text-xl leading-none">&times;</button>
             </div>
             <form onSubmit={handleUpload} className="space-y-4">
@@ -698,12 +948,34 @@ export default function StudioPage() {
                   </div>
                 )}
               </div>
-              <div><label className={labelCls}>Judul *</label><input type="text" value={form.title} onChange={set('title')} required placeholder="cth. Heavy Metal Impact" className={inputCls} /></div>
+              <div>
+                <label className={labelCls}>Judul * <span className="text-[#4a4d5e] font-normal">({form.title.length}/120)</span></label>
+                <input type="text" value={form.title} onChange={set('title')} required maxLength={120} placeholder="cth. Heavy Metal Impact" className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Jenis Asset *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['sfx', 'music'] as AssetKind[]).map(kind => (
+                    <button
+                      key={kind}
+                      type="button"
+                      onClick={() => setFormState(f => chooseAssetKind(kind, f))}
+                      className={`py-2 rounded-xl text-sm font-medium border transition-colors ${
+                        form.assetKind === kind
+                          ? 'bg-accent text-white border-accent'
+                          : 'bg-lift text-[#8b8fa8] border-rim hover:text-white'
+                      }`}
+                    >
+                      {kind === 'sfx' ? 'SFX' : 'Music'}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div>
                 <label className={labelCls}>Kategori *</label>
                 <select value={form.categorySlug} onChange={set('categorySlug')} required className={`${inputCls} bg-lift`}>
                   <option value="" disabled>Pilih Kategori...</option>
-                  {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+                  {categoriesByType(form.assetKind).map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                 </select>
               </div>
               <div><label className={labelCls}>Deskripsi</label><textarea value={form.description} onChange={set('description')} rows={2} placeholder="Deskripsi singkat sound..." className={`${inputCls} resize-none`} /></div>
@@ -711,53 +983,51 @@ export default function StudioPage() {
                 <div>
                   <label className={labelCls}>Akses</label>
                   <select value={form.accessLevel} onChange={set('accessLevel')} className={`${inputCls} bg-lift`}>
-                    <option value="FREE">Free</option><option value="PRO">Pro</option><option value="PURCHASE">Purchase</option>
+                    <option value="FREE">Free</option>
+                    <option value="PRO">Pro</option>
+                    <option value="PURCHASE">Paid</option>
                   </select>
                 </div>
                 <div>
                   <label className={labelCls}>Harga (Rp)</label>
-                  <input type="number" value={form.price} onChange={set('price')} min="0" step="1000" disabled={form.accessLevel === 'FREE'} placeholder="0" className={`${inputCls} disabled:opacity-40`} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="10000000"
+                    value={form.price}
+                    onChange={set('price')}
+                    disabled={form.accessLevel !== 'PURCHASE'}
+                    placeholder="cth. 15000"
+                    className={inputCls}
+                  />
+                  {form.accessLevel === 'PURCHASE' && form.price !== '' && !/^\d+$/.test(form.price) && (
+                    <p className="text-[10px] text-red-400 mt-1">⚠ Hanya angka yang diizinkan</p>
+                  )}
                 </div>
               </div>
-              <div><label className={labelCls}>Tags</label><input type="text" value={form.tags} onChange={set('tags')} placeholder="impact, metal, heavy, sfx" className={inputCls} /></div>
-              {categories.find(c => c.slug === form.categorySlug)?.type === 'music' && (
-                <div className="space-y-3 pt-1 border-t border-rim">
-                  <p className="text-xs font-semibold text-accent-bright">Detail Musik</p>
-                  <div>
+              <div><label className={labelCls}>Tags</label><input type="text" value={form.tags} onChange={set('tags')} placeholder="impact, cinematic, whoosh" className={inputCls} /></div>
+              {form.assetKind === 'music' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-rim">
+                  <p className="text-xs font-semibold text-accent-bright sm:col-span-2">Detail Musik</p>
+                  <div className="sm:col-span-2">
                     <label className={labelCls}>Genre</label>
-                    <input
-                      type="text"
-                      value={form.genres}
-                      onChange={set('genres')}
-                      placeholder="cinematic, orchestral, trailer"
-                      list="music-genres"
-                      className={inputCls}
+                    <MultiChipSelect
+                      options={MUSIC_GENRES}
+                      selected={form.genres ? form.genres.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      onChange={sel => setFormState(f => ({ ...f, genres: sel.join(', ') }))}
                     />
-                    <datalist id="music-genres">
-                      {MUSIC_GENRES.map(g => <option key={g} value={g} />)}
-                    </datalist>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className={labelCls}>BPM</label><input type="number" value={form.bpm} onChange={set('bpm')} min="1" max="300" placeholder="120" className={inputCls} /></div>
-                    <div>
-                      <label className={labelCls}>Nada</label>
-                      <select value={form.musicalKey} onChange={set('musicalKey')} className={`${inputCls} bg-lift`}>
-                        <option value="">— Pilih —</option>
-                        {MUSICAL_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <label className={labelCls}>Mood</label>
-                    <select value={form.mood} onChange={set('mood')} className={`${inputCls} bg-lift`}>
-                      <option value="">— Pilih —</option>
-                      {MOODS.map(m => <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
-                    </select>
+                    <MultiChipSelect
+                      options={MUSIC_MOODS}
+                      selected={form.mood ? form.mood.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      onChange={sel => setFormState(f => ({ ...f, mood: sel.join(', ') }))}
+                    />
                   </div>
-                  <label className="flex items-center gap-2.5 cursor-pointer">
-                    <input type="checkbox" checked={form.hasStems} onChange={e => setFormState(f => ({ ...f, hasStems: e.target.checked }))} className="w-4 h-4 rounded accent-orange-500" />
-                    <span className="text-sm text-[#c4c6d8]">Termasuk stems / track terpisah</span>
-                  </label>
+
                 </div>
               )}
               {uploadError && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{uploadError}</p>}

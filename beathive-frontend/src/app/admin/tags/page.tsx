@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store/auth.store';
 
 
-interface Tag { id: string; name: string; slug: string; _count: { soundEffects: number } }
+interface Tag { id: string; name: string; slug: string; _count: { audioAssets: number } }
 
 function slugify(str: string) {
   return str.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -101,7 +101,7 @@ export default function AdminTagsPage() {
                   <span className="text-xs text-[#6b6f82] font-mono">#{tag.slug}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-xs text-[#6b6f82]">{tag._count.soundEffects} sounds</span>
+                  <span className="text-xs text-[#6b6f82]">{tag._count.audioAssets} sounds</span>
                   <button onClick={() => del(tag.id, tag.name)} className="text-xs text-red-500 hover:underline">Delete</button>
                 </div>
               </div>

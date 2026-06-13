@@ -9,10 +9,10 @@ import { useDownload } from '@/lib/hooks/useDownload';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { formatDuration } from '@/lib/utils';
 import { toast } from '@/lib/store/toast.store';
-import type { SoundEffect } from '@/types';
+import type { AudioAsset } from '@/types';
 import clsx from 'clsx';
 
-interface Props { sound: SoundEffect }
+interface Props { sound: AudioAsset }
 
 const MiniWaveform = memo(function MiniWaveform({ data, isActive, progress }: { data: number[]; isActive: boolean; progress: number }) {
   const bars = useMemo(() => {
@@ -61,6 +61,10 @@ function SoundCard({ sound }: Props) {
 
   const inCart = hasItem(sound.id);
   const isOwner = !!(user?.id && sound.author?.id && sound.author.id === user.id);
+  const isMusic = sound.assetType === 'MUSIC' || sound.category?.type === 'music';
+  const musicMood = sound.mood ?? sound.musicMetadata?.mood;
+  const musicGenre = sound.genres?.[0]?.name;
+
 
   const isPurchasable = sound.accessLevel === 'PURCHASE' ||
     ((sound.accessLevel === 'PRO' || sound.accessLevel === 'BUSINESS') && sound.price > 0);
@@ -168,6 +172,21 @@ function SoundCard({ sound }: Props) {
             {sound.tags.length > 3 && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-[#3a3c4e]">
                 +{sound.tags.length - 3}
+              </span>
+            )}
+          </div>
+        )}
+
+        {isMusic && (musicMood || musicGenre) && (
+          <div className="flex flex-wrap gap-1">
+            {musicMood && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal/10 text-teal border border-teal/20 capitalize">
+                {musicMood}
+              </span>
+            )}
+            {musicGenre && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent-bright border border-accent/20">
+                {musicGenre}
               </span>
             )}
           </div>
