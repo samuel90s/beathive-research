@@ -1,5 +1,9 @@
 // src/admin/admin.service.ts
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import {
+  Injectable, NotFoundException, ForbiddenException, Logger,
+  ConflictException, BadRequestException,
+} from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 
@@ -162,6 +166,183 @@ export class AdminService {
       items,
       pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  async getPlans() {
+    return this.prisma.plan.findMany({
+      select: { id: true, name: true, slug: true },
+      orderBy: { priceMonthly: 'asc' },
+    });
+  }
+
+  async createUser(dto: {
+    name: string;
+    email: string;
+    password: string;
+    role?: 'USER' | 'ADMIN';
+    planSlug?: string;
+  }) {
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existing) throw new ConflictException('Email is already registered');
+
+    const plan = await this.prisma.plan.findUnique({
+      where: { slug: dto.planSlug || 'free' },
+    });
+    if (!plan) throw new BadRequestException('Plan not found');
+
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const user = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          name: dto.name,
+          email: dto.email,
+          passwordHash,
+          provider: 'email',
+          role: dto.role || 'USER',
+          emailVerified: true,
+        },
+      });
+      await tx.subscription.create({
+        data: {
+          userId: created.id,
+          planId: plan.id,
+          status: 'ACTIVE',
+          billingCycle: 'MONTHLY',
+          currentPeriodEnd: plan.slug === 'free'
+            ? new Date('2099-12-31T23:59:59.000Z')
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+      return created;
+    });
+
+    return { id: user.id, message: 'User created successfully' };
+  }
+
+  async updateUser(
+    userId: string,
+    adminId: string,
+    dto: {
+      name?: string;
+      email?: string;
+      password?: string;
+      role?: 'USER' | 'ADMIN';
+      planSlug?: string;
+    },
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (userId === adminId && dto.role && dto.role !== 'ADMIN') {
+      throw new ForbiddenException('You cannot remove your own admin role');
+    }
+
+    if (dto.email && dto.email !== user.email) {
+      const duplicate = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (duplicate) throw new ConflictException('Email is already registered');
+    }
+
+    if (user.role === 'ADMIN' && dto.role === 'USER') {
+      const adminCount = await this.prisma.user.count({ where: { role: 'ADMIN' } });
+      if (adminCount <= 1) throw new ForbiddenException('At least one admin must remain');
+    }
+
+    const plan = dto.planSlug
+      ? await this.prisma.plan.findUnique({ where: { slug: dto.planSlug } })
+      : null;
+    if (dto.planSlug && !plan) throw new BadRequestException('Plan not found');
+
+    const passwordHash = dto.password ? await bcrypt.hash(dto.password, 12) : undefined;
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          name: dto.name,
+          email: dto.email,
+          role: dto.role,
+          passwordHash,
+          refreshTokenHash: dto.password ? null : undefined,
+          refreshTokenUpdatedAt: dto.password ? null : undefined,
+        },
+      });
+
+      if (plan) {
+        await tx.subscription.upsert({
+          where: { userId },
+          update: {
+            planId: plan.id,
+            status: 'ACTIVE',
+            cancelledAt: null,
+            currentPeriodEnd: plan.slug === 'free'
+              ? new Date('2099-12-31T23:59:59.000Z')
+              : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          },
+          create: {
+            userId,
+            planId: plan.id,
+            status: 'ACTIVE',
+            billingCycle: 'MONTHLY',
+            currentPeriodEnd: plan.slug === 'free'
+              ? new Date('2099-12-31T23:59:59.000Z')
+              : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          },
+        });
+      }
+    });
+
+    return { ok: true, message: 'User updated successfully' };
+  }
+
+  async deleteUser(userId: string, adminId: string) {
+    if (userId === adminId) throw new ForbiddenException('You cannot delete your own account');
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        _count: {
+          select: {
+            uploadedAssets: true,
+            orders: true,
+            downloads: true,
+            ratings: true,
+            wishlists: true,
+          },
+        },
+        wallet: {
+          select: {
+            _count: { select: { earnings: true, withdrawals: true } },
+          },
+        },
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    const activityCount =
+      user._count.uploadedAssets +
+      user._count.orders +
+      user._count.downloads +
+      user._count.ratings +
+      user._count.wishlists +
+      (user.wallet?._count.earnings || 0) +
+      (user.wallet?._count.withdrawals || 0);
+    if (activityCount > 0) {
+      throw new ForbiddenException(
+        'User has sounds, orders, downloads, or financial history and cannot be permanently deleted',
+      );
+    }
+
+    if (user.role === 'ADMIN') {
+      const adminCount = await this.prisma.user.count({ where: { role: 'ADMIN' } });
+      if (adminCount <= 1) throw new ForbiddenException('At least one admin must remain');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.subscriptionIntent.deleteMany({ where: { userId } });
+      await tx.subscription.deleteMany({ where: { userId } });
+      if (user.wallet) await tx.creatorWallet.delete({ where: { userId } });
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    return { ok: true, message: 'User deleted successfully' };
   }
 
   // ─── List withdrawal requests ─────────────────────────────

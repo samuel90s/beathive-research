@@ -1,9 +1,12 @@
 // src/admin/admin.controller.ts
 import {
   Controller, Get, Post, Patch, Delete, Body, Param, Query,
-  UseGuards, HttpCode, HttpStatus, BadRequestException,
+  UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
-import { IsString, IsOptional, IsIn, MaxLength } from 'class-validator';
+import {
+  IsEmail, IsString, IsOptional, IsIn, MaxLength, MinLength,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -26,6 +29,61 @@ class UpdateWithdrawalDto {
   @IsString()
   @MaxLength(500)
   note?: string;
+}
+
+class CreateUserDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  name: string;
+
+  @IsEmail()
+  @MaxLength(254)
+  @Transform(({ value }) => typeof value === 'string' ? value.trim().toLowerCase() : value)
+  email: string;
+
+  @IsString()
+  @MinLength(8)
+  @MaxLength(72)
+  password: string;
+
+  @IsOptional()
+  @IsIn(['USER', 'ADMIN'])
+  role?: 'USER' | 'ADMIN';
+
+  @IsOptional()
+  @IsString()
+  planSlug?: string;
+}
+
+class UpdateUserDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  name?: string;
+
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(254)
+  @Transform(({ value }) => typeof value === 'string' ? value.trim().toLowerCase() : value)
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(72)
+  password?: string;
+
+  @IsOptional()
+  @IsIn(['USER', 'ADMIN'])
+  role?: 'USER' | 'ADMIN';
+
+  @IsOptional()
+  @IsString()
+  planSlug?: string;
 }
 
 @Controller('admin')
@@ -83,6 +141,35 @@ export class AdminController {
     const p = Math.max(1, Number(page) || 1);
     const l = Math.min(100, Math.max(1, Number(limit) || 20));
     return this.adminService.getUsers(p, l, search);
+  }
+
+  @Get('plans')
+  async getPlans() {
+    return this.adminService.getPlans();
+  }
+
+  @Post('users')
+  async createUser(@Body() body: CreateUserDto) {
+    return this.adminService.createUser(body);
+  }
+
+  @Patch('users/:id')
+  @HttpCode(HttpStatus.OK)
+  async updateUser(
+    @Param('id') id: string,
+    @CurrentUser() adminId: string,
+    @Body() body: UpdateUserDto,
+  ) {
+    return this.adminService.updateUser(id, adminId, body);
+  }
+
+  @Delete('users/:id')
+  @HttpCode(HttpStatus.OK)
+  async deleteUser(
+    @Param('id') id: string,
+    @CurrentUser() adminId: string,
+  ) {
+    return this.adminService.deleteUser(id, adminId);
   }
 
   // GET /admin/withdrawals?status=PENDING&page=1&limit=20
