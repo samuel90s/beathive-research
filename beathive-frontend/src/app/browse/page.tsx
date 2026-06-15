@@ -100,9 +100,19 @@ const MUSIC_CATS = [
     subcats: ['Dramatic', 'Tense', 'Emotional', 'Action'],
   },
   {
+    slug: 'game-music', name: 'Game Music', gradient: 'from-accent to-teal',
+    desc: 'Music for games and interactive media',
+    subcats: ['8-bit', 'RPG', 'Boss Battle', 'Menu', 'Victory', 'Puzzle'],
+  },
+  {
     slug: 'cinematic', name: 'Cinematic', gradient: 'from-carmine-dim to-teal',
     desc: 'Epic orchestral tracks',
     subcats: ['Epic', 'Orchestral', 'Ambient', 'Trailer'],
+  },
+  {
+    slug: 'ambient-music', name: 'Ambient Music', gradient: 'from-teal-dim to-teal',
+    desc: 'Atmospheric and minimal music',
+    subcats: ['Atmospheric', 'Meditation', 'Drone', 'Calm'],
   },
   {
     slug: 'electronic-music', name: 'Electronic Music', gradient: 'from-teal to-accent',
@@ -114,10 +124,65 @@ const MUSIC_CATS = [
     desc: 'Organic instruments',
     subcats: ['Guitar', 'Piano', 'Folk', 'Jazz'],
   },
+  {
+    slug: 'corporate', name: 'Corporate', gradient: 'from-accent to-teal',
+    desc: 'Business and presentation music',
+    subcats: ['Inspirational', 'Technology', 'Presentation', 'Uplifting'],
+  },
+  {
+    slug: 'lo-fi', name: 'Lo-fi', gradient: 'from-carmine-dim to-accent',
+    desc: 'Relaxed beats and study music',
+    subcats: ['Chill', 'Study', 'Beat', 'Relaxed'],
+  },
+  {
+    slug: 'hip-hop', name: 'Hip-Hop', gradient: 'from-slate-600 to-accent',
+    desc: 'Hip-hop beats and urban tracks',
+    subcats: ['Boom Bap', 'Trap', 'Urban', 'Beat'],
+  },
+  {
+    slug: 'rock', name: 'Rock', gradient: 'from-carmine to-zinc-700',
+    desc: 'Guitars, drums, and energetic tracks',
+    subcats: ['Alternative', 'Hard Rock', 'Indie', 'Punk'],
+  },
+  {
+    slug: 'pop', name: 'Pop', gradient: 'from-accent to-carmine',
+    desc: 'Modern and catchy pop music',
+    subcats: ['Dance Pop', 'Indie Pop', 'Synth Pop', 'Upbeat'],
+  },
+  {
+    slug: 'jazz', name: 'Jazz', gradient: 'from-accent-dim to-teal',
+    desc: 'Jazz, swing, and lounge',
+    subcats: ['Swing', 'Lounge', 'Smooth', 'Big Band'],
+  },
+  {
+    slug: 'classical', name: 'Classical', gradient: 'from-stone-500 to-accent',
+    desc: 'Classical and chamber music',
+    subcats: ['Piano', 'Strings', 'Chamber', 'Romantic'],
+  },
+  {
+    slug: 'fantasy-music', name: 'Fantasy Music', gradient: 'from-carmine to-teal',
+    desc: 'Magical and fantasy worlds',
+    subcats: ['Adventure', 'Medieval', 'Magic', 'RPG'],
+  },
+  {
+    slug: 'kids-music', name: 'Kids Music', gradient: 'from-accent to-teal',
+    desc: 'Playful and cheerful children music',
+    subcats: ['Playful', 'Happy', 'Cartoon', 'Education'],
+  },
+  {
+    slug: 'podcast-music', name: 'Podcast Music', gradient: 'from-teal to-slate-600',
+    desc: 'Intros, outros, and podcast beds',
+    subcats: ['Intro', 'Outro', 'News', 'Talk Show'],
+  },
+  {
+    slug: 'trailer-music', name: 'Trailer Music', gradient: 'from-carmine to-accent',
+    desc: 'Powerful music for trailers',
+    subcats: ['Epic', 'Action', 'Teaser', 'Dramatic'],
+  },
 ];
 
 const FEATURED_SFX = SFX_CATS.slice(0, 8);
-const FEATURED_MUSIC = MUSIC_CATS;
+const FEATURED_MUSIC = MUSIC_CATS.slice(0, 8);
 
 // ─── Category Icons (SVG paths) ───────────────────────────────────────────────
 

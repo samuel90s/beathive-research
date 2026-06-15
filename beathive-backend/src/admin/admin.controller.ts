@@ -86,6 +86,26 @@ class UpdateUserDto {
   planSlug?: string;
 }
 
+class CategoryDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  name: string;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  slug: string;
+
+  @IsIn(['sfx', 'music'])
+  type: 'sfx' | 'music';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  icon?: string;
+}
+
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
@@ -213,14 +233,14 @@ export class AdminController {
   }
 
   @Post('categories')
-  async createCategory(@Body() body: { name: string; slug: string; icon?: string }) {
-    return this.adminService.createCategory(body.name, body.slug, body.icon);
+  async createCategory(@Body() body: CategoryDto) {
+    return this.adminService.createCategory(body.name, body.slug, body.type, body.icon);
   }
 
   @Patch('categories/:id')
   @HttpCode(HttpStatus.OK)
-  async updateCategory(@Param('id') id: string, @Body() body: { name: string; slug: string; icon?: string }) {
-    return this.adminService.updateCategory(id, body.name, body.slug, body.icon);
+  async updateCategory(@Param('id') id: string, @Body() body: CategoryDto) {
+    return this.adminService.updateCategory(id, body.name, body.slug, body.type, body.icon);
   }
 
   @Delete('categories/:id')

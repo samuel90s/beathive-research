@@ -451,14 +451,22 @@ export class AdminService {
     return cats;
   }
 
-  async createCategory(name: string, slug: string, icon?: string) {
-    return this.prisma.category.create({ data: { name, slug, icon } });
+  async createCategory(name: string, slug: string, type: 'sfx' | 'music', icon?: string) {
+    return this.prisma.category.create({ data: { name, slug, type, icon } });
   }
 
-  async updateCategory(id: string, name: string, slug: string, icon?: string) {
-    const cat = await this.prisma.category.findUnique({ where: { id } });
+  async updateCategory(id: string, name: string, slug: string, type: 'sfx' | 'music', icon?: string) {
+    const cat = await this.prisma.category.findUnique({
+      where: { id },
+      include: { _count: { select: { audioAssets: true } } },
+    });
     if (!cat) throw new NotFoundException('Category not found');
-    return this.prisma.category.update({ where: { id }, data: { name, slug, icon } });
+    if (cat.type !== type && cat._count.audioAssets > 0) {
+      throw new ForbiddenException(
+        `Cannot change type: ${cat._count.audioAssets} audio assets use this category`,
+      );
+    }
+    return this.prisma.category.update({ where: { id }, data: { name, slug, type, icon } });
   }
 
   async deleteCategory(id: string) {

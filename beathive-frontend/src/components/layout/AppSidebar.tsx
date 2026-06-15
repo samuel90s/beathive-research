@@ -40,7 +40,11 @@ function BrowseTypeItem({ type, label, icon, collapsed }: {
   const currentType = searchParams.get('soundType') ?? '';
   const currentCat = searchParams.get('categorySlug') ?? '';
   const SFX_SLUGS = ['foley','ambience','soundscape','nature','explosions','weapons','vehicles','ui-game','horror','human','animals','electronic','comedy','magic','sports','industrial'];
-  const MUSIC_SLUGS = ['sound-scoring','cinematic','electronic-music','acoustic'];
+  const MUSIC_SLUGS = [
+    'sound-scoring','game-music','cinematic','ambient-music','electronic-music',
+    'acoustic','corporate','lo-fi','hip-hop','rock','pop','jazz','classical',
+    'fantasy-music','kids-music','podcast-music','trailer-music',
+  ];
 
   const isBrowse = pathname === '/browse';
   const isActive = isBrowse && (

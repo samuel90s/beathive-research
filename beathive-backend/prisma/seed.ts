@@ -39,9 +39,22 @@ async function main() {
     { slug: 'industrial',       name: 'Industrial',          type: 'sfx'   },
     // Music
     { slug: 'sound-scoring',    name: 'Sound Scoring',       type: 'music' },
+    { slug: 'game-music',       name: 'Game Music',          type: 'music' },
     { slug: 'cinematic',        name: 'Cinematic',           type: 'music' },
+    { slug: 'ambient-music',    name: 'Ambient Music',       type: 'music' },
     { slug: 'electronic-music', name: 'Electronic Music',    type: 'music' },
     { slug: 'acoustic',         name: 'Acoustic',            type: 'music' },
+    { slug: 'corporate',        name: 'Corporate',           type: 'music' },
+    { slug: 'lo-fi',            name: 'Lo-fi',               type: 'music' },
+    { slug: 'hip-hop',          name: 'Hip-Hop',             type: 'music' },
+    { slug: 'rock',             name: 'Rock',                type: 'music' },
+    { slug: 'pop',              name: 'Pop',                 type: 'music' },
+    { slug: 'jazz',             name: 'Jazz',                type: 'music' },
+    { slug: 'classical',        name: 'Classical',           type: 'music' },
+    { slug: 'fantasy-music',    name: 'Fantasy Music',       type: 'music' },
+    { slug: 'kids-music',       name: 'Kids Music',          type: 'music' },
+    { slug: 'podcast-music',    name: 'Podcast Music',       type: 'music' },
+    { slug: 'trailer-music',    name: 'Trailer Music',       type: 'music' },
   ]
 
   for (const cat of categories) {
