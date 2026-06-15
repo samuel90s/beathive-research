@@ -15,17 +15,6 @@ export default function Footer() {
             <p className="text-sm text-[#6b6f82] leading-relaxed max-w-xs">
               Premium sound effects for content creators, game developers, and filmmakers. License-ready, instantly downloadable.
             </p>
-            <div className="flex items-center gap-3 mt-5">
-              {[
-                { label: '10K+', desc: 'Sounds' },
-                { label: '500+', desc: 'Creators' },
-              ].map((s) => (
-                <div key={s.label} className="px-3 py-2 card rounded-lg text-center">
-                  <p className="text-sm font-bold text-accent-bright">{s.label}</p>
-                  <p className="text-[10px] text-[#6b6f82] mt-0.5">{s.desc}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Explore */}
@@ -87,8 +76,8 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-rim pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-[#4a4d5e]">© {new Date().getFullYear()} Arsonus. All rights reserved.</p>
-          <p className="text-xs text-[#4a4d5e]">Made with <span className="text-accent/60">♪</span> for creators.</p>
+          <p className="text-xs text-[#4a4d5e]">© {new Date().getFullYear()} BeatHive. All rights reserved.</p>
+          <p className="text-xs text-[#4a4d5e]">Built for creators.</p>
         </div>
       </div>
     </footer>

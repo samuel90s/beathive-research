@@ -15,6 +15,7 @@ export default function WishlistPage() {
   const [data, setData] = useState<SoundsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) router.push('/auth/login');
@@ -22,13 +23,30 @@ export default function WishlistPage() {
 
   const fetchWishlist = useCallback(async (p = 1) => {
     setIsLoading(true);
+    setError(null);
     try {
       const result = await soundsApi.getWishlist(p, 20);
       setData(result);
       setPage(p);
-    } catch { /* ignore */ }
+    } catch {
+      setError('Wishlist gagal dimuat. Silakan coba lagi.');
+    }
     finally { setIsLoading(false); }
   }, []);
+
+  const removeFromList = (soundId: string) => {
+    setData((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        items: current.items.filter((sound) => sound.id !== soundId),
+        pagination: {
+          ...current.pagination,
+          total: Math.max(0, current.pagination.total - 1),
+        },
+      };
+    });
+  };
 
   useEffect(() => {
     if (isAuthenticated) fetchWishlist(1);
@@ -46,6 +64,15 @@ export default function WishlistPage() {
           {data && ` · ${data.pagination.total} sound`}
         </p>
       </div>
+
+      {error && (
+        <div role="alert" className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          {error}
+          <button onClick={() => fetchWishlist(page)} className="ml-2 font-semibold underline">
+            Coba lagi
+          </button>
+        </div>
+      )}
 
       {/* Loading skeleton */}
       {isLoading && (
@@ -65,7 +92,7 @@ export default function WishlistPage() {
             </svg>
           </div>
           <p className="text-base font-semibold text-[#c4c6d8]">Wishlist masih kosong</p>
-          <p className="text-sm text-[#5a5d72] mt-1 mb-5">Klik ikon ♡ pada sound untuk menyimpannya di sini</p>
+          <p className="text-sm text-[#5a5d72] mt-1 mb-5">Klik ikon hati pada sound untuk menyimpannya di sini</p>
           <Link href="/browse" className="inline-block px-5 py-2.5 btn-accent text-sm font-semibold rounded-xl">
             Browse Sound
           </Link>
@@ -77,7 +104,13 @@ export default function WishlistPage() {
         <>
           <div className="space-y-1.5">
             {data.items.map((sound) => (
-              <SoundRow key={sound.id} sound={sound} />
+              <SoundRow
+                key={sound.id}
+                sound={sound}
+                onWishlistChange={(liked) => {
+                  if (!liked) removeFromList(sound.id);
+                }}
+              />
             ))}
           </div>
 

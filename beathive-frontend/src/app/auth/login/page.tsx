@@ -96,7 +96,7 @@ export default function LoginPage() {
                 <p className="text-xs text-[#5a5d72] mt-1">Enter the code from your authenticator app.</p>
               </div>
             )}
-            {error && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{error}</p>}
+            {error && <p role="alert" aria-live="assertive" className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{error}</p>}
             <button type="submit" disabled={loading} className="w-full py-2.5 btn-accent rounded-xl text-sm font-medium disabled:opacity-50">
               {loading ? 'Signing in...' : needs2FA ? 'Verify & Sign In' : 'Sign In'}
             </button>

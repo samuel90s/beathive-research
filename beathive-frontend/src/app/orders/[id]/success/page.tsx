@@ -193,7 +193,7 @@ function OrderSuccessContent() {
           {/* Header strip */}
           <div className="bg-accent px-5 py-4">
             <div className="flex items-center justify-between mb-1">
-              <span className="font-bold text-white tracking-tight">arsonus</span>
+              <span className="font-bold text-white tracking-tight">BeatHive</span>
               <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-medium">
                 Paid ✓
               </span>

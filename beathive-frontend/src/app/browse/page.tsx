@@ -1,7 +1,7 @@
 // src/app/browse/page.tsx
 'use client';
 import { Suspense, useState, useEffect, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useSounds } from '@/lib/hooks/useSounds';
 import SoundCard from '@/components/sounds/SoundCard';
 import type { SoundFilters } from '@/types';
@@ -769,7 +769,6 @@ function SoundList({ category, filters, onBack }: {
 // ─── Main Browse ──────────────────────────────────────────────────────────────
 
 function BrowseContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [categorySlug, setCategorySlug] = useState(searchParams.get('categorySlug') ?? '');
@@ -795,7 +794,8 @@ function BrowseContent() {
   const updateUrl = (params: Record<string, string>) => {
     const p = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => { if (v) p.set(k, v); });
-    router.push(`/browse?${p.toString()}`);
+    const query = p.toString();
+    window.location.assign(query ? `/browse?${query}` : '/browse');
   };
 
   const handleCategoryClick = (slug: string) => {

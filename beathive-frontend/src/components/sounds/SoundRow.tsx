@@ -13,7 +13,10 @@ import type { AudioAsset } from '@/types';
 import WaveformBar from './WaveformBar';
 import clsx from 'clsx';
 
-interface Props { sound: AudioAsset }
+interface Props {
+  sound: AudioAsset;
+  onWishlistChange?: (liked: boolean) => void;
+}
 
 const CAT_COLORS: Record<string, string> = {
   'foley':            'from-carmine to-accent',
@@ -38,7 +41,7 @@ const CAT_COLORS: Record<string, string> = {
   'acoustic':         'from-accent to-carmine',
 };
 
-function SoundRow({ sound }: Props) {
+function SoundRow({ sound, onWishlistChange }: Props) {
   const isActive = usePlayerStore(s => s.currentTrack?.id === sound.id);
   const isCurrentlyPlaying = usePlayerStore(s => s.currentTrack?.id === sound.id && s.isPlaying);
   const play = usePlayerStore(s => s.play);
@@ -99,7 +102,10 @@ function SoundRow({ sound }: Props) {
 
   const handleWishlist = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await toggleWishlist(sound.id, liked, (newLiked) => setLiked(newLiked));
+    await toggleWishlist(sound.id, liked, (newLiked) => {
+      setLiked(newLiked);
+      onWishlistChange?.(newLiked);
+    });
   };
 
   // Badge: PRO di samping judul, FREE di kolom action
@@ -132,6 +138,7 @@ function SoundRow({ sound }: Props) {
       {/* Play button */}
       <button
         onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+        aria-label={isCurrentlyPlaying ? `Pause ${sound.title}` : `Play ${sound.title}`}
         className={clsx(
           'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-150 relative',
           isActive
@@ -219,6 +226,7 @@ function SoundRow({ sound }: Props) {
           onClick={handleWishlist}
           disabled={wishlistLoading}
           title={liked ? 'Remove from wishlist' : 'Add to wishlist'}
+          aria-label={liked ? `Remove ${sound.title} from wishlist` : `Add ${sound.title} to wishlist`}
           className={clsx(
             'flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full transition-all duration-150',
             liked ? 'text-rose-400' : 'text-[#3a3c4e] hover:text-rose-400',

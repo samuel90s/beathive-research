@@ -121,6 +121,7 @@ function SoundCard({ sound }: Props) {
         {/* Play button */}
         <button
           onClick={togglePlay}
+          aria-label={isCurrentlyPlaying ? `Pause ${sound.title}` : `Play ${sound.title}`}
           className={clsx(
             'absolute bottom-2 right-2 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md z-10',
             isActive
@@ -222,6 +223,7 @@ function SoundCard({ sound }: Props) {
               <button
                 onClick={handleWishlist}
                 disabled={loadingId === sound.id}
+                aria-label={liked ? `Remove ${sound.title} from wishlist` : `Add ${sound.title} to wishlist`}
                 className={clsx(
                   'w-7 h-7 rounded-lg flex items-center justify-center transition-all',
                   liked ? 'text-rose-400' : 'text-[#3a3c4e] hover:text-rose-400',
@@ -244,6 +246,7 @@ function SoundCard({ sound }: Props) {
             ) : isPurchasable && !sound.isPurchased ? (
               <button
                 onClick={handleCart}
+                aria-label={inCart ? `${sound.title} is in cart` : `Add ${sound.title} to cart`}
                 className={clsx(
                   'w-7 h-7 rounded-lg flex items-center justify-center transition-all',
                   inCart
@@ -265,6 +268,7 @@ function SoundCard({ sound }: Props) {
               <button
                 onClick={handleDownload}
                 disabled={downloading === sound.id}
+                aria-label={`Download ${sound.title}`}
                 className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#1a1b2e] border border-[#2a2c3e] text-[#6b6f82] hover:text-white hover:border-white/10 transition-all disabled:opacity-40"
                 title="Download"
               >

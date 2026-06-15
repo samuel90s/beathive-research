@@ -932,8 +932,13 @@ export default function StudioPage() {
           <div className="card-lift rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 border border-rim shadow-elevated">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-semibold text-white">Upload Audio</h2>
-              <button onClick={() => setShowModal(false)} className="text-[#4a4d5e] hover:text-[#8b8fa8] text-xl leading-none">&times;</button>
+              <button aria-label="Tutup formulir upload" onClick={() => setShowModal(false)} className="text-[#4a4d5e] hover:text-[#8b8fa8] text-xl leading-none">&times;</button>
             </div>
+            {uploadError && (
+              <p role="alert" aria-live="assertive" className="mb-4 text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">
+                {uploadError}
+              </p>
+            )}
             <form onSubmit={handleUpload} className="space-y-4">
               <div onDrop={handleDrop} onDragOver={e => e.preventDefault()} onClick={() => fileRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${selectedFile ? 'border-accent/60 bg-accent/[0.08]' : 'border-rim hover:border-accent/40 hover:bg-accent/[0.05]'}`}>
@@ -1030,7 +1035,6 @@ export default function StudioPage() {
 
                 </div>
               )}
-              {uploadError && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{uploadError}</p>}
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 btn-ghost rounded-xl text-sm font-medium">Batal</button>
                 <button type="submit" disabled={uploading} className="flex-1 py-2.5 btn-accent rounded-xl text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">

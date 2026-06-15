@@ -84,15 +84,16 @@ const FEATURES = [
   },
 ];
 
-const STATS = [
-  { value: '10K+', label: 'Sound Effects' },
-  { value: '500+', label: 'Creators' },
-  { value: '4.9★', label: 'Avg Rating' },
-  { value: '99%', label: 'Satisfaction' },
-];
-
 export default async function HomePage() {
   const categories = await getCategories();
+  const totalSounds = categories.reduce((total, category) => total + category._count.audioAssets, 0);
+  const activeCategories = categories.filter((category) => category._count.audioAssets > 0).length;
+  const stats = [
+    { value: totalSounds.toLocaleString('id-ID'), label: 'Sounds' },
+    { value: activeCategories.toLocaleString('id-ID'), label: 'Active Categories' },
+    { value: '3/day', label: 'Free Downloads' },
+    { value: '2', label: 'License Types' },
+  ];
 
   return (
     <div className="relative overflow-hidden">
@@ -109,7 +110,7 @@ export default async function HomePage() {
         {/* Badge */}
         <div className="relative inline-flex items-center gap-2 px-4 py-2 rounded-full border border-accent/30 bg-accent/10 text-accent-bright text-xs font-medium mb-8 animate-fade-up">
           <span className="w-1.5 h-1.5 bg-teal rounded-full animate-pulse" />
-          10,000+ ready-to-use sound effects
+          {totalSounds.toLocaleString('id-ID')} ready-to-use sounds
         </div>
 
         {/* Heading */}
@@ -120,7 +121,7 @@ export default async function HomePage() {
         </h1>
 
         <p className="relative text-lg text-[#7d7f96] max-w-lg mx-auto mb-4 animate-fade-up leading-relaxed">
-          Premium SFX and music for video, games, podcasts, and ads. Subscribe for unlimited access or buy individually.
+          Premium SFX and music for video, games, podcasts, and ads. Subscribe for broader access or buy individually.
         </p>
 
         {/* Waveform graphic */}
@@ -150,7 +151,7 @@ export default async function HomePage() {
       {/* ─── Stats bar ────────────────────────────────────── */}
       <section className="relative max-w-4xl mx-auto px-4 -mt-4 mb-16">
         <div className="card rounded-2xl px-2 py-2 grid grid-cols-4 divide-x divide-rim">
-          {STATS.map((s) => (
+          {stats.map((s) => (
             <div key={s.label} className="text-center py-4 px-3">
               <p className="text-xl font-bold text-gradient-brand">{s.value}</p>
               <p className="text-xs text-[#6b6f82] mt-0.5">{s.label}</p>
@@ -214,10 +215,10 @@ export default async function HomePage() {
         <div className="card rounded-2xl p-8 relative overflow-hidden">
           <div className="absolute inset-0 bg-hero-glow opacity-50 pointer-events-none" />
           <div className="relative">
-            <h2 className="text-xl font-semibold text-white mb-6 text-center">How Arsonus works</h2>
+            <h2 className="text-xl font-semibold text-white mb-6 text-center">How BeatHive works</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { step: '01', title: 'Search & Preview', desc: 'Search thousands of sounds. Preview 30-second clips directly in your browser.' },
+                { step: '01', title: 'Search & Preview', desc: 'Explore the catalog and preview audio directly in your browser.' },
                 { step: '02', title: 'Choose Your Plan', desc: 'Subscribe for unlimited access, or buy individual sounds with a perpetual license.' },
                 { step: '03', title: 'Download & Create', desc: 'Instantly download your files. Your license PDF is included automatically.' },
               ].map((item) => (
@@ -249,7 +250,7 @@ export default async function HomePage() {
             </div>
             <h2 className="text-3xl font-bold text-white mb-3">Start creating today</h2>
             <p className="text-[#b0b3c8] mb-8 text-sm max-w-sm mx-auto">
-              5 free downloads every month. Upgrade anytime for unlimited access.
+              3 free downloads every day. Upgrade anytime for more access and a commercial license.
             </p>
             <div className="flex items-center justify-center gap-3 flex-wrap">
               <Link href="/auth/register"

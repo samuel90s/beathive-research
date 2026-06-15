@@ -2,7 +2,7 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCartStore } from '@/lib/store/cart.store';
@@ -29,7 +29,6 @@ function EqIcon() {
 }
 
 function SearchBarInner() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
@@ -43,9 +42,9 @@ function SearchBarInner() {
   const submit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     const q = query.trim();
-    if (!q) { router.push('/browse'); return; }
-    router.push(`/browse?search=${encodeURIComponent(q)}`);
-  }, [query, router]);
+    const destination = q ? `/browse?search=${encodeURIComponent(q)}` : '/browse';
+    window.location.assign(destination);
+  }, [query]);
 
   return (
     <form onSubmit={submit} className="hidden md:flex items-center relative mx-3 flex-1 max-w-xs">

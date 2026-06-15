@@ -12,11 +12,11 @@ export async function generateMetadata(
     const res = await fetch(`${API_URL}/sounds/${slug}`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return { title: 'Arsonus' };
+    if (!res.ok) return { title: 'BeatHive' };
     const sound = await res.json();
-    const title = `${sound.title} | Arsonus`;
+    const title = `${sound.title} | BeatHive`;
     const description = sound.description
-      ?? `Download ${sound.title} — ${sound.category?.name} sound effect on Arsonus`;
+      ?? `Download ${sound.title} — ${sound.category?.name} sound effect on BeatHive`;
     return {
       title,
       description,
@@ -29,7 +29,7 @@ export async function generateMetadata(
       twitter: { card: 'summary', title: sound.title, description },
     };
   } catch {
-    return { title: 'Arsonus' };
+    return { title: 'BeatHive' };
   }
 }
 

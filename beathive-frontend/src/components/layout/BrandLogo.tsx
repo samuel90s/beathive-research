@@ -32,7 +32,7 @@ export default function BrandLogo({
       </span>
       {showText && (
         <span className={clsx('font-bold uppercase tracking-wide text-white', textClassName)}>
-          Arsonus
+          BeatHive
         </span>
       )}
     </span>

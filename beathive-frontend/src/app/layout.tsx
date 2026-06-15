@@ -11,7 +11,7 @@ import { AppSidebarWrapper } from '@/components/layout/AppSidebarWrapper';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Arsonus — Premium Sound Effects & Music',
+  title: 'BeatHive — Premium Sound Effects & Music',
   description: 'Thousands of premium sound effects for content creators, game developers, and video creators.',
 };
 
@@ -58,4 +58,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-

@@ -61,7 +61,7 @@ export default function RegisterPage() {
                   placeholder={placeholder} className="w-full px-3 py-2.5 input-dark rounded-xl text-sm" />
               </div>
             ))}
-            {error && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{error}</p>}
+            {error && <p role="alert" aria-live="assertive" className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{error}</p>}
             <button type="submit" disabled={loading}
               className="w-full py-2.5 btn-accent rounded-xl text-sm font-medium disabled:opacity-50">
               {loading ? 'Creating account...' : 'Create Free Account'}
