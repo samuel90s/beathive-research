@@ -489,7 +489,7 @@ function CategoryLanding({ soundType, onCategoryClick, onSubcatClick, onMoodClic
             onClick={() => opt.value === '' ? onCategoryClick('') : onSubcatClick('__type__', opt.value)}
             className={clsx(
               'px-4 py-2 rounded-lg text-sm font-medium transition-all',
-              soundType === opt.value ? 'bg-white text-black' : 'text-[#6b6f82] hover:text-white hover:bg-white/[0.06]',
+              soundType === opt.value ? 'bg-accent text-white' : 'text-[#6b6f82] hover:text-white hover:bg-white/[0.06]',
             )}>
             {opt.label}
           </button>
@@ -501,7 +501,7 @@ function CategoryLanding({ soundType, onCategoryClick, onSubcatClick, onMoodClic
         <section className="mb-10">
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Sound Effects</h2>
-            <div className="flex-1 h-px bg-[#1e2030]" />
+            <div className="flex-1 h-px bg-rim" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {FEATURED_SFX.map(cat => (
@@ -516,17 +516,17 @@ function CategoryLanding({ soundType, onCategoryClick, onSubcatClick, onMoodClic
         <section className="mb-10">
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Music</h2>
-            <div className="flex-1 h-px bg-[#1e2030]" />
+            <div className="flex-1 h-px bg-rim" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {FEATURED_MUSIC.map(cat => (
               <CategoryCard key={cat.slug} cat={cat} onClick={() => onCategoryClick(cat.slug)} />
             ))}
           </div>
-          <div className="mt-4 rounded-2xl border border-[#1e2030] bg-[#0d0e18] p-4">
+          <div className="mt-4 rounded-2xl border border-rim bg-surface p-4">
             <div className="flex items-center gap-3 mb-3">
               <h3 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Mood Musik</h3>
-              <div className="flex-1 h-px bg-[#1e2030]" />
+              <div className="flex-1 h-px bg-rim" />
             </div>
             <div className="flex flex-wrap gap-2">
               {MUSIC_MOODS.filter(m => m.value).map(mood => (
@@ -547,11 +547,11 @@ function CategoryLanding({ soundType, onCategoryClick, onSubcatClick, onMoodClic
       <section>
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Semua Kategori</h2>
-          <div className="flex-1 h-px bg-[#1e2030]" />
+          <div className="flex-1 h-px bg-rim" />
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-px bg-[#1a1b2e] rounded-2xl overflow-hidden border border-[#1a1b2e]">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 rounded-2xl overflow-hidden border border-rim bg-surface divide-x divide-y divide-rim">
           {allCats.map(cat => (
-            <div key={cat.slug} className="bg-[#0d0e18] p-4 hover:bg-[#111220] transition-colors group">
+            <div key={cat.slug} className="bg-surface p-4 hover:bg-lift transition-colors group">
               {/* Category header */}
               <button
                 onClick={() => onCategoryClick(cat.slug)}
@@ -939,8 +939,8 @@ export default function BrowsePage() {
         <div className="grid grid-cols-4 gap-3 mb-8">
           {Array(8).fill(0).map((_, i) => <div key={i} className="aspect-video rounded-xl bg-white/[0.04] animate-pulse" />)}
         </div>
-        <div className="grid grid-cols-4 gap-px bg-[#1a1b2e] rounded-xl overflow-hidden">
-          {Array(8).fill(0).map((_, i) => <div key={i} className="bg-[#0e0f1a] p-4 h-40 animate-pulse" />)}
+        <div className="grid grid-cols-4 rounded-xl overflow-hidden border border-rim bg-surface divide-x divide-y divide-rim">
+          {Array(8).fill(0).map((_, i) => <div key={i} className="bg-surface p-4 h-40 animate-pulse" />)}
         </div>
       </div>
     }>
