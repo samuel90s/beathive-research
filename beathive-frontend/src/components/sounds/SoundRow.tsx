@@ -60,6 +60,12 @@ function SoundRow({ sound, onWishlistChange }: Props) {
   const musicMood = sound.mood ?? sound.musicMetadata?.mood;
   const musicGenre = sound.genres?.[0]?.name;
   const hasStems = sound.hasStems ?? sound.musicMetadata?.hasStems;
+  const hasFullAccess =
+    isOwner ||
+    sound.accessLevel === 'FREE' ||
+    sound.isPurchased ||
+    ((sound.accessLevel === 'PRO' || sound.accessLevel === 'BUSINESS') && user?.subscription?.plan?.slug === 'pro');
+  const isPreviewOnly = !hasFullAccess;
 
   const togglePlay = () => {
     if (isActive) isCurrentlyPlaying ? pause() : usePlayerStore.getState().resume();
@@ -134,14 +140,6 @@ function SoundRow({ sound, onWishlistChange }: Props) {
             <polygon points="0,0 10,6 0,12"/>
           </svg>
         )}
-        {/* Lock icon for restricted sounds */}
-        {sound.accessLevel !== 'FREE' && !isActive && !isOwner && (
-          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-surface border border-rim flex items-center justify-center">
-            <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#6b6f82" strokeWidth="2.5" strokeLinecap="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-          </span>
-        )}
       </button>
 
       {/* Info */}
@@ -163,6 +161,11 @@ function SoundRow({ sound, onWishlistChange }: Props) {
         </div>
         <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
           <span className="text-xs text-slate-500 dark:text-[#5a5d72] truncate">{sound.category.name}</span>
+          {isPreviewOnly && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:text-amber-300 flex-shrink-0">
+              Preview
+            </span>
+          )}
           {isMusic && musicMood && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal/10 text-teal border border-teal/20 capitalize flex-shrink-0">
               {musicMood}
