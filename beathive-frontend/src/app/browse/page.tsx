@@ -391,6 +391,8 @@ const SORT_OPTIONS = [
   { value: 'popular',    label: 'Terpopuler' },
   { value: 'trending',   label: 'Trending' },
   { value: 'mostplayed', label: 'Paling Diputar' },
+  { value: 'price_low',  label: 'Termurah' },
+  { value: 'price_high', label: 'Termahal' },
 ];
 
 const ACCESS_FILTERS = [
@@ -398,6 +400,12 @@ const ACCESS_FILTERS = [
   { value: 'FREE',     label: 'Gratis' },
   { value: 'PRO',      label: 'Pro' },
   { value: 'PURCHASE', label: 'Beli Satuan' },
+];
+
+const LICENSE_FILTERS = [
+  { value: '', label: 'Semua Lisensi' },
+  { value: 'personal', label: 'Personal' },
+  { value: 'commercial', label: 'Commercial' },
 ];
 
 const MUSIC_GENRES = [
@@ -582,12 +590,17 @@ function SoundList({ category, filters, onBack }: {
 }) {
   const [sort, setSort] = useState('newest');
   const [access, setAccess] = useState('');
+  const [licenseType, setLicenseType] = useState('');
   const [genre, setGenre] = useState(filters.genreSlug ?? '');
   const [mood, setMood] = useState(filters.mood ?? '');
   const [searchInput, setSearchInput] = useState('');
   const [subcat, setSubcat] = useState(filters.search ?? '');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
   const [page, setPage] = useState(filters.page ?? 1);
   const debouncedSearch = useDebounce(searchInput, 400);
+  const debouncedPriceMin = useDebounce(priceMin, 500);
+  const debouncedPriceMax = useDebounce(priceMax, 500);
 
   useEffect(() => {
     setSubcat(filters.search ?? '');
@@ -599,18 +612,31 @@ function SoundList({ category, filters, onBack }: {
 
   useEffect(() => {
     setPage(1);
-  }, [sort, access, debouncedSearch, subcat, genre, mood]);
+  }, [sort, access, licenseType, debouncedSearch, subcat, genre, mood, debouncedPriceMin, debouncedPriceMax]);
+
+  const parsedPriceMin = useMemo(() => {
+    const value = parseInt(debouncedPriceMin, 10);
+    return Number.isFinite(value) && value >= 0 ? value : undefined;
+  }, [debouncedPriceMin]);
+
+  const parsedPriceMax = useMemo(() => {
+    const value = parseInt(debouncedPriceMax, 10);
+    return Number.isFinite(value) && value >= 0 ? value : undefined;
+  }, [debouncedPriceMax]);
 
   const activeFilters: SoundFilters = useMemo(() => ({
     ...filters,
     sortBy: sort as SoundFilters['sortBy'],
     accessLevel: (access || undefined) as SoundFilters['accessLevel'],
+    licenseType: (licenseType || undefined) as SoundFilters['licenseType'],
+    minPrice: parsedPriceMin,
+    maxPrice: parsedPriceMax,
     genreSlug: genre || undefined,
     mood: mood || undefined,
     search: debouncedSearch || (subcat ? subcat : undefined),
     page,
     limit: 30,
-  }), [access, debouncedSearch, filters, genre, mood, page, sort, subcat]);
+  }), [access, licenseType, parsedPriceMax, parsedPriceMin, debouncedSearch, filters, genre, mood, page, sort, subcat]);
 
   const { data, isLoading, isFetching, isError } = useSounds(activeFilters, true);
   const isMusic = filters.soundType === 'music' || (category ? MUSIC_CATS.some(c => c.slug === category.slug) : false);
@@ -687,6 +713,55 @@ function SoundList({ category, filters, onBack }: {
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
+        <div className="mt-2 flex flex-col gap-2 xl:flex-row xl:items-center">
+          <select
+            value={licenseType}
+            onChange={e => setLicenseType(e.target.value)}
+            className="px-3 py-1.5 input-dark rounded-lg text-xs text-[#c4c6d8] cursor-pointer xl:w-40"
+          >
+            {LICENSE_FILTERS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              inputMode="numeric"
+              value={priceMin}
+              onChange={e => setPriceMin(e.target.value)}
+              placeholder="Harga min"
+              className="w-28 px-3 py-1.5 input-dark rounded-lg text-xs"
+            />
+            <span className="text-xs text-[#4a4d5e]">-</span>
+            <input
+              type="number"
+              min="0"
+              inputMode="numeric"
+              value={priceMax}
+              onChange={e => setPriceMax(e.target.value)}
+              placeholder="Harga max"
+              className="w-28 px-3 py-1.5 input-dark rounded-lg text-xs"
+            />
+            {(access || licenseType || priceMin || priceMax || genre || mood || subcat || searchInput || sort !== 'newest') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSort('newest');
+                  setAccess('');
+                  setLicenseType('');
+                  setPriceMin('');
+                  setPriceMax('');
+                  setGenre('');
+                  setMood('');
+                  setSubcat('');
+                  setSearchInput('');
+                }}
+                className="px-3 py-1.5 rounded-lg border border-rim text-xs text-[#8b8fa8] hover:border-white/10 hover:text-white transition-colors"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
         {isMusic && (
           <div className="mt-2 flex items-center gap-2 overflow-x-auto scrollbar-none">
             <select value={genre} onChange={e => setGenre(e.target.value)} className="px-3 py-1.5 input-dark rounded-lg text-xs text-[#c4c6d8] cursor-pointer">
@@ -721,9 +796,9 @@ function SoundList({ category, filters, onBack }: {
             <p className="text-sm text-[#5a5d72] mt-1">
               {subcat ? `Tidak ada sound "${subcat}" di kategori ini` : 'Belum ada sound di kategori ini'}
             </p>
-            {(subcat || searchInput || access || genre || mood) && (
+            {(subcat || searchInput || access || licenseType || priceMin || priceMax || genre || mood) && (
               <button
-                onClick={() => { setSubcat(''); setSearchInput(''); setAccess(''); setGenre(''); setMood(''); }}
+                onClick={() => { setSubcat(''); setSearchInput(''); setAccess(''); setLicenseType(''); setPriceMin(''); setPriceMax(''); setGenre(''); setMood(''); }}
                 className="mt-4 px-4 py-2 rounded-lg border border-accent/30 text-xs font-medium text-accent-bright hover:bg-accent/10 transition-colors"
               >
                 Clear filters
@@ -774,6 +849,7 @@ function BrowseContent() {
   const [categorySlug, setCategorySlug] = useState(searchParams.get('categorySlug') ?? '');
   const [soundType, setSoundType] = useState(searchParams.get('soundType') ?? '');
   const [urlSearch, setUrlSearch] = useState(searchParams.get('search') ?? '');
+  const [urlAuthorId, setUrlAuthorId] = useState(searchParams.get('authorId') ?? '');
   const [urlMood, setUrlMood] = useState(searchParams.get('mood') ?? '');
   const [urlGenre, setUrlGenre] = useState(searchParams.get('genreSlug') ?? '');
 
@@ -782,11 +858,13 @@ function BrowseContent() {
     const cat = searchParams.get('categorySlug') ?? '';
     const type = searchParams.get('soundType') ?? '';
     const search = searchParams.get('search') ?? '';
+    const authorId = searchParams.get('authorId') ?? '';
     const mood = searchParams.get('mood') ?? '';
     const genreSlug = searchParams.get('genreSlug') ?? '';
     setCategorySlug(cat);
     setSoundType(type);
     setUrlSearch(search);
+    setUrlAuthorId(authorId);
     setUrlMood(mood);
     setUrlGenre(genreSlug);
   }, [searchParams]);
@@ -826,14 +904,15 @@ function BrowseContent() {
     categorySlug: categorySlug || undefined,
     soundType: soundType || undefined,
     search: urlSearch || undefined,
+    authorId: urlAuthorId || undefined,
     mood: urlMood || undefined,
     genreSlug: urlGenre || undefined,
     sortBy: 'newest',
     page: 1,
     limit: 30,
-  }), [categorySlug, soundType, urlGenre, urlMood, urlSearch]);
+  }), [categorySlug, soundType, urlAuthorId, urlGenre, urlMood, urlSearch]);
 
-  if (activeCategory || (categorySlug && !activeCategory) || urlMood || urlGenre || urlSearch) {
+  if (activeCategory || (categorySlug && !activeCategory) || urlMood || urlGenre || urlSearch || urlAuthorId) {
     return (
       <SoundList
         category={activeCategory}

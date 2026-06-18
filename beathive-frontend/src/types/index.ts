@@ -162,6 +162,7 @@ export interface SoundsResponse {
 export interface SoundFilters {
   search?: string;
   categorySlug?: string;
+  authorId?: string;
   soundType?: string;
   isFree?: boolean;
   accessLevel?: 'FREE' | 'PRO' | 'BUSINESS' | 'PURCHASE';
@@ -169,6 +170,9 @@ export interface SoundFilters {
   maxDuration?: number;
   minPrice?: number;
   maxPrice?: number;
+  priceMin?: number;
+  priceMax?: number;
+  licenseType?: 'personal' | 'commercial';
   tags?: string;
   minBpm?: number;
   maxBpm?: number;
@@ -177,7 +181,7 @@ export interface SoundFilters {
   hasStems?: boolean;
   genreSlug?: string;
   genres?: string;
-  sortBy?: 'newest' | 'oldest' | 'popular' | 'mostplayed' | 'price_asc' | 'price_desc' | 'trending';
+  sortBy?: 'newest' | 'oldest' | 'popular' | 'mostplayed' | 'price_low' | 'price_high' | 'price_asc' | 'price_desc' | 'trending';
   page?: number;
   limit?: number;
 }

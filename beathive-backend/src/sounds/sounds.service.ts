@@ -39,6 +39,10 @@ export class SoundFilterDto {
   @IsString()
   categorySlug?: string;
 
+  @IsOptional()
+  @IsString()
+  authorId?: string;
+
   /** Filter berdasarkan tipe: "sfx" atau "music" */
   @IsOptional()
   @IsString()
@@ -85,6 +89,22 @@ export class SoundFilterDto {
   @IsNumber()
   @Min(0)
   maxPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceMin?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceMax?: number;
+
+  @IsOptional()
+  @IsEnum(['personal', 'commercial'])
+  licenseType?: string;
 
   // Music-specific filters
   @IsOptional()
@@ -300,6 +320,7 @@ export class SoundsService {
     const {
       search,
       categorySlug,
+      authorId,
       isFree,
       accessLevel,
       page = 1,
@@ -307,10 +328,13 @@ export class SoundsService {
       sortBy = 'newest',
     } = filters;
 
+    const minPrice = filters.minPrice ?? filters.priceMin;
+    const maxPrice = filters.maxPrice ?? filters.priceMax;
+
     if (filters.minDuration !== undefined && filters.maxDuration !== undefined && filters.minDuration > filters.maxDuration) {
       throw new BadRequestException('minDuration cannot exceed maxDuration');
     }
-    if (filters.minPrice !== undefined && filters.maxPrice !== undefined && filters.minPrice > filters.maxPrice) {
+    if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
       throw new BadRequestException('minPrice cannot exceed maxPrice');
     }
 
@@ -328,12 +352,16 @@ export class SoundsService {
     } else if (filters.soundType) {
       where.assetType = String(filters.soundType).toLowerCase() === 'music' ? 'MUSIC' : 'SFX';
     }
+    if (authorId) where.authorId = authorId;
 
     if (isFree !== undefined) {
       where.price = String(isFree) === 'true' || isFree === true ? 0 : { gt: 0 };
     }
 
     if (accessLevel) where.accessLevel = accessLevel;
+    if (filters.licenseType) {
+      where.licenseType = { in: [filters.licenseType, 'both'] };
+    }
 
     if (filters.minDuration !== undefined) {
       where.durationMs = { ...(where.durationMs ?? {}), gte: filters.minDuration };
@@ -344,11 +372,11 @@ export class SoundsService {
 
     // Only apply price range when isFree is NOT set
     if (isFree === undefined) {
-      if (filters.minPrice !== undefined) {
-        where.price = { ...(typeof where.price === 'object' && where.price !== null ? where.price : {}), gte: filters.minPrice };
+      if (minPrice !== undefined) {
+        where.price = { ...(typeof where.price === 'object' && where.price !== null ? where.price : {}), gte: minPrice };
       }
-      if (filters.maxPrice !== undefined) {
-        where.price = { ...(typeof where.price === 'object' && where.price !== null ? where.price : {}), lte: filters.maxPrice };
+      if (maxPrice !== undefined) {
+        where.price = { ...(typeof where.price === 'object' && where.price !== null ? where.price : {}), lte: maxPrice };
       }
     }
 
@@ -397,6 +425,8 @@ export class SoundsService {
           oldest:     { createdAt: 'asc' },
           popular:    { downloadCount: 'desc' },
           mostplayed: { playCount: 'desc' },
+          price_low:  { price: 'asc' },
+          price_high: { price: 'desc' },
           price_asc:  { price: 'asc' },
           price_desc: { price: 'desc' },
           trending:   { downloads: { _count: 'desc' } },
