@@ -143,6 +143,9 @@ export class SubscriptionsService {
           first_name: user.name,
           email: user.email,
         },
+        callbacks: {
+          finish: `${this.config.get('FRONTEND_URL')}/studio?upgrade=success`,
+        },
       });
     } catch (err: any) {
       await this.prisma.subscriptionIntent.deleteMany({ where: { orderId } });

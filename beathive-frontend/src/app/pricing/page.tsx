@@ -38,37 +38,6 @@ interface ConfirmPlan {
   durationLabel: string;
 }
 
-type MidtransSnap = {
-  pay: (
-    token: string,
-    callbacks: {
-      onSuccess?: () => void | Promise<void>;
-      onPending?: () => void;
-      onError?: () => void;
-      onClose?: () => void;
-    },
-  ) => void;
-};
-
-declare global {
-  interface Window {
-    snap?: MidtransSnap;
-  }
-}
-
-async function waitForMidtransSnap(timeoutMs = 8000): Promise<MidtransSnap | null> {
-  if (typeof window === 'undefined') return null;
-  if (window.snap) return window.snap;
-
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < timeoutMs) {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    if (window.snap) return window.snap;
-  }
-
-  return null;
-}
-
 function ConfirmModal({ plan, onConfirm, onClose, loading }: {
   plan: ConfirmPlan; onConfirm: () => void; onClose: () => void; loading: boolean;
 }) {
@@ -166,32 +135,24 @@ export default function PricingPage() {
     if (!confirm) return;
     setLoading('pro');
     try {
+      const serviceFee = Math.round(confirm.price * SERVICE_FEE_PERCENT / 100);
+      const tax = Math.round((confirm.price + serviceFee) * TAX_PERCENT / 100);
       const result = await subscriptionsApi.upgrade(confirm.slug, confirm.duration as any);
-      setConfirm(null);
-      const snap = await waitForMidtransSnap();
-      if (!snap) {
-        setLoading(null);
-        toast.error('Payment gateway belum siap. Refresh halaman lalu coba lagi.');
-        return;
-      }
 
-      snap.pay(result.snapToken, {
-        onSuccess: async () => {
-          try { await subscriptionsApi.verifyPayment(result.orderId); } catch { /* webhook */ }
-          setLoading(null);
-          router.push('/studio?upgrade=success');
-        },
-        onPending: () => {
-          setLoading(null);
-          router.push('/dashboard/orders?status=pending');
-        },
-        onError: () => {
-          setLoading(null);
-          toast.error('Pembayaran gagal diproses. Silakan coba lagi.');
-        },
-        onClose: () => setLoading(null),
-      });
-      setLoading(null);
+      sessionStorage.setItem('pendingSubscriptionPayment', JSON.stringify({
+        orderId: result.orderId,
+        snapToken: result.snapToken,
+        planName: confirm.name,
+        duration: confirm.duration,
+        durationLabel: confirm.durationLabel,
+        subtotal: confirm.price,
+        serviceFee,
+        tax,
+        grandTotal: result.price,
+      }));
+
+      setConfirm(null);
+      router.push(`/subscriptions/${result.orderId}/pay`);
     } catch (err: any) {
       setLoading(null);
       const message = err?.code === 'ECONNABORTED'
@@ -200,7 +161,6 @@ export default function PricingPage() {
       toast.error(Array.isArray(message) ? message.join(', ') : message);
     }
   };
-
   return (
     <>
       {confirm && (

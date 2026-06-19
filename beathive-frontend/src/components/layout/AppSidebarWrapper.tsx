@@ -5,7 +5,7 @@ import { AppSidebar } from './AppSidebar';
 
 const NO_SIDEBAR_PREFIXES = [
   '/auth', '/pricing', '/faq', '/checkout',
-  '/not-found', '/admin', '/login', '/orders',
+  '/not-found', '/admin', '/login', '/orders', '/subscriptions',
 ];
 
 function shouldShowSidebar(pathname: string): boolean {
