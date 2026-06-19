@@ -36,9 +36,10 @@ const securityHeaders = [
       // Audio/video: izinkan backend lokal dan CDN
       `media-src 'self' blob: http://localhost:3000 ${process.env.NEXT_PUBLIC_API_URL || ''}`,
       // API requests: izinkan backend
-      `connect-src 'self' http://localhost:3000 http://localhost:3001 ${process.env.NEXT_PUBLIC_API_URL || ''} https://api.midtrans.com https://app.midtrans.com https://app.sandbox.midtrans.com`,
-      // Iframe: tolak semua
-      "frame-src 'none'",
+      `connect-src 'self' http://localhost:3000 http://localhost:3001 ${process.env.NEXT_PUBLIC_API_URL || ''} https://api.midtrans.com https://api.sandbox.midtrans.com https://app.midtrans.com https://app.sandbox.midtrans.com https://*.midtrans.com`,
+      // Midtrans Snap memakai iframe/modal untuk pilihan pembayaran
+      "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com https://*.midtrans.com",
+      "child-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com https://*.midtrans.com",
       // Plugin objects (Flash, dll): tolak
       "object-src 'none'",
       // Form action: hanya domain sendiri

@@ -191,6 +191,7 @@ export default function PricingPage() {
         },
         onClose: () => setLoading(null),
       });
+      setLoading(null);
     } catch (err: any) {
       setLoading(null);
       const message = err?.code === 'ECONNABORTED'
