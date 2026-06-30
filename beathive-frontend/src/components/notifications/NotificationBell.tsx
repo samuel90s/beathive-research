@@ -90,7 +90,7 @@ export default function NotificationBell() {
           <div className="max-h-96 overflow-y-auto">
             {items.length === 0 ? (
               <div className="px-4 py-10 text-center">
-                <p className="text-sm text-[#6b6f82]">Belum ada notifikasi.</p>
+                <p className="text-sm text-[#6b6f82]">No notifications yet.</p>
               </div>
             ) : (
               items.map((item) => {

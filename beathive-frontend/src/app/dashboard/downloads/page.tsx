@@ -13,15 +13,15 @@ import type { DownloadHistoryItem } from '@/types';
 import clsx from 'clsx';
 
 const LICENSE_OPTIONS = [
-  { value: 'all', label: 'Semua Lisensi' },
+  { value: 'all', label: 'All Licenses' },
   { value: 'personal', label: 'Personal' },
   { value: 'commercial', label: 'Commercial' },
 ];
 
 const SOURCE_OPTIONS = [
-  { value: 'all', label: 'Semua' },
+  { value: 'all', label: 'All' },
   { value: 'subscription', label: 'Via Subscription' },
-  { value: 'purchase', label: 'Via Pembelian' },
+  { value: 'purchase', label: 'Via Purchase' },
 ];
 
 const LICENSE_BADGE: Record<string, { label: string; cls: string }> = {

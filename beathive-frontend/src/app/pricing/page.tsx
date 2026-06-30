@@ -64,11 +64,11 @@ function ConfirmModal({ plan, onConfirm, onClose, loading }: {
             <span className="text-[#c4c6d8]">{formatPrice(plan.price)}</span>
           </div>
           <div className="flex justify-between text-sm text-[#6b6f82]">
-            <span>Biaya Layanan ({SERVICE_FEE_PERCENT}%)</span>
+            <span>Service Fee ({SERVICE_FEE_PERCENT}%)</span>
             <span>{formatPrice(serviceFee)}</span>
           </div>
           <div className="flex justify-between text-sm text-[#6b6f82]">
-            <span>PPN ({TAX_PERCENT}%)</span>
+            <span>Tax ({TAX_PERCENT}%)</span>
             <span>{formatPrice(tax)}</span>
           </div>
           <div className="border-t border-rim pt-2.5 flex justify-between font-bold">
@@ -76,18 +76,18 @@ function ConfirmModal({ plan, onConfirm, onClose, loading }: {
             <span className="text-accent-bright">{formatPrice(total)}</span>
           </div>
           <p className="text-xs text-[#5a5d72] pt-1 leading-relaxed">
-            Akses aktif langsung setelah pembayaran dikonfirmasi. Bisa dibatalkan kapan saja.
+            Access activates immediately after payment is confirmed. Cancel anytime.
           </p>
         </div>
         <div className="px-6 pb-5 flex gap-2">
           <button onClick={onClose} disabled={loading} className="flex-1 py-2.5 btn-ghost rounded-xl text-sm font-medium disabled:opacity-50">
-            Batal
+            Cancel
           </button>
           <button onClick={onConfirm} disabled={loading}
             className="flex-1 py-2.5 btn-accent rounded-xl text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-1.5">
             {loading ? (
-              <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Memproses...</>
-            ) : `Bayar ${formatPrice(total)}`}
+              <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
+            ) : `Pay ${formatPrice(total)}`}
           </button>
         </div>
       </div>
@@ -175,7 +175,7 @@ export default function PricingPage() {
       <div className="max-w-3xl mx-auto px-4 py-10">
         <div className="mb-7">
           <p className="text-xs font-semibold text-accent-bright uppercase tracking-[0.16em] mb-2">Pricing</p>
-          <h1 className="text-2xl font-bold text-white">Pilih plan</h1>
+          <h1 className="text-2xl font-bold text-white">Choose a Plan</h1>
           <p className="text-sm text-[#6b6f82] mt-1">Mulai gratis, upgrade saat butuh akses lebih.</p>
         </div>
 
@@ -206,7 +206,7 @@ export default function PricingPage() {
               onClick={() => router.push(isAuthenticated ? '/browse' : '/auth/register')}
               className="w-full py-2.5 rounded-xl text-sm font-semibold btn-ghost transition-all"
             >
-              {isAuthenticated ? 'Browse Sounds' : 'Mulai Gratis'}
+              {isAuthenticated ? 'Browse Sounds' : 'Get Started Free'}
             </button>
           </div>
 

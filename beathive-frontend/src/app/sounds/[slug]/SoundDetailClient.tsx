@@ -16,6 +16,8 @@ import { toast } from '@/lib/store/toast.store';
 import WaveformBar from '@/components/sounds/WaveformBar';
 import RatingSection from '@/components/sounds/RatingSection';
 import SoundRow from '@/components/sounds/SoundRow';
+import SimilarSounds from '@/components/recommendations/SimilarSounds';
+import { recommendationsApi } from '@/lib/api/recommendations';
 import type { AudioAsset } from '@/types';
 
 export default function SoundDetailClient({ slug }: { slug: string }) {
@@ -91,7 +93,11 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
 
   const togglePlay = () => {
     if (isActive) {
-      isPlaying ? pause() : usePlayerStore.getState().resume();
+      if (isPlaying) {
+        pause();
+      } else {
+        usePlayerStore.getState().resume();
+      }
     } else {
       play(sound);
     }
@@ -100,6 +106,7 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
   const handleDownload = async () => {
     try {
       await download(sound.id, sound.slug, sound.format);
+      if (isAuthenticated) recommendationsApi.logBehavior('download', { audioAssetId: sound.id });
     } catch (err: any) {
       toast.error(err.message || 'Download failed');
     }
@@ -108,13 +115,14 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
   const handleWishlist = async () => {
     if (!isAuthenticated) { router.push('/auth/login'); return; }
     await toggleWishlist(sound.id, liked, (newLiked) => setLiked(newLiked));
+    if (!liked) recommendationsApi.logBehavior('wishlist', { audioAssetId: sound.id });
   };
 
   const accessLabels = {
     FREE:     { label: 'Free',     cls: 'bg-teal-500/10 text-teal-400 border-teal-500/20' },
     PRO:      { label: 'Pro',      cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
     BUSINESS: { label: 'Business', cls: 'bg-carmine/10 text-carmine border-carmine/20' },
-    PURCHASE: { label: 'Beli',     cls: 'bg-white/[0.05] text-[#c4c6d8] border-rim' },
+    PURCHASE: { label: 'Buy',     cls: 'bg-white/[0.05] text-[#c4c6d8] border-rim' },
   };
   const badge = accessLabels[sound.accessLevel] ?? accessLabels.FREE;
 
@@ -284,7 +292,10 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
             isAuthenticated={isAuthenticated}
             downloading={downloading}
             onDownload={handleDownload}
-            onAddCart={() => addItem(sound, 'personal')}
+            onAddCart={() => {
+              addItem(sound, 'personal');
+              if (isAuthenticated) recommendationsApi.logBehavior('cart', { audioAssetId: sound.id });
+            }}
             onRemoveCart={() => removeItem(sound.id)}
             onLogin={() => router.push('/auth/login')}
             onBuyNow={() => {
@@ -302,12 +313,15 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
       {/* Related Sounds */}
       {relatedSounds.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[#4a4d5e] uppercase tracking-widest mb-3">Sound Serupa</h3>
+          <h3 className="text-sm font-semibold text-[#4a4d5e] uppercase tracking-widest mb-3">Similar Sounds</h3>
           <div className="space-y-1.5">
             {relatedSounds.map(s => <SoundRow key={s.id} sound={s} />)}
           </div>
         </div>
       )}
+
+      {/* Similar Sounds — AI Content-Based Recommendations */}
+      {sound && <SimilarSounds audioId={sound.id} currentSlug={sound.slug} limit={3} />}
 
       </div>{/* end left column */}
 
@@ -327,7 +341,10 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
             isAuthenticated={isAuthenticated}
             downloading={downloading}
             onDownload={handleDownload}
-            onAddCart={() => addItem(sound, 'personal')}
+            onAddCart={() => {
+              addItem(sound, 'personal');
+              if (isAuthenticated) recommendationsApi.logBehavior('cart', { audioAssetId: sound.id });
+            }}
             onRemoveCart={() => removeItem(sound.id)}
             onLogin={() => router.push('/auth/login')}
             onBuyNow={() => {
@@ -371,7 +388,7 @@ export default function SoundDetailClient({ slug }: { slug: string }) {
             stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
           </svg>
-          {liked ? 'Hapus dari Wishlist' : 'Simpan ke Wishlist'}
+          {liked ? 'Remove from Wishlist' : 'Save to Wishlist'}
         </button>
       </div>
 
@@ -566,14 +583,14 @@ function BuyNowModal({ sound, onClose, onPaid }: {
   };
 
   const licenses = [
-    { type: 'personal' as const,   label: 'Personal License',   price: personalPrice,   desc: 'Proyek personal, podcast, konten non-komersial' },
-    { type: 'commercial' as const, label: 'Commercial License', price: commercialPrice, desc: 'Iklan, film, konten monetized, apps & games' },
+    { type: 'personal' as const,   label: 'Personal License',   price: personalPrice,   desc: 'Personal projects, podcasts, non-commercial content' },
+    { type: 'commercial' as const, label: 'Commercial License', price: commercialPrice, desc: 'Ads, films, monetized content, apps & games' },
   ];
 
   const breakdown = [
     { label: 'Subtotal',                                value: fmtPrice(subtotal) },
-    { label: `Biaya Layanan (${SERVICE_FEE_PERCENT}%)`, value: fmtPrice(serviceFee) },
-    { label: `PPN (${TAX_PERCENT}%)`,                   value: fmtPrice(tax) },
+    { label: `Service Fee (${SERVICE_FEE_PERCENT}%)`,   value: fmtPrice(serviceFee) },
+    { label: `Tax (${TAX_PERCENT}%)`,                    value: fmtPrice(tax) },
   ];
 
   return (

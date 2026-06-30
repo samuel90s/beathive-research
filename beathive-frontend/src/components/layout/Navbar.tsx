@@ -2,7 +2,7 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCartStore } from '@/lib/store/cart.store';
@@ -31,6 +31,7 @@ function EqIcon() {
 
 function SearchBarInner() {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
 
@@ -44,8 +45,8 @@ function SearchBarInner() {
     e.preventDefault();
     const q = query.trim();
     const destination = q ? `/browse?search=${encodeURIComponent(q)}` : '/browse';
-    window.location.assign(destination);
-  }, [query]);
+    router.push(destination);
+  }, [query, router]);
 
   return (
     <form onSubmit={submit} className="hidden md:flex items-center relative mx-3 flex-1 max-w-xs">
@@ -57,7 +58,7 @@ function SearchBarInner() {
         type="search"
         value={query}
         onChange={e => setQuery(e.target.value)}
-        placeholder="Search sounds…"
+        placeholder="Search soundsâ€¦"
         className="w-full pl-8 pr-3 h-8 text-sm bg-white/[0.04] border border-[#1e2030] rounded-lg text-[#c4c6d8] placeholder-[#3a3c4e] focus:outline-none focus:border-accent/40 focus:bg-white/[0.06] transition-all"
       />
     </form>
@@ -151,7 +152,7 @@ export default function Navbar() {
             <BrandLogo textClassName="text-[15px]" />
           </Link>
 
-          {/* Desktop nav links — langsung setelah logo */}
+          {/* Desktop nav links â€” langsung setelah logo */}
           {isAdminArea ? (
             <div className="hidden sm:flex items-center gap-2 border-l border-rim pl-4">
               <span className="text-sm font-semibold text-white">Admin Panel</span>
@@ -513,3 +514,5 @@ export default function Navbar() {
     </>
   );
 }
+
+

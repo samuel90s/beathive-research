@@ -43,6 +43,7 @@ model User {
   wallet         CreatorWallet?
   ratings        Rating[]
   notifications  Notification[]
+  behaviorLogs   UserBehaviorLog[]
 
   @@map("users")
 }
@@ -424,4 +425,45 @@ model Notification {
   @@index([userId, readAt, createdAt])
   @@index([type])
   @@map("notifications")
+}
+
+// ─── Recommendation: Bandit State ────────────────────────
+// Thompson Sampling state per audio asset for exploration/exploitation
+// α (alpha) → successes (plays/purchases after recommendation) + 1
+// β (beta)  → failures (impressions without interaction) + 1
+
+model BanditState {
+  audioAssetId String   @id
+  alpha        Float    @default(1.0)
+  beta         Float    @default(1.0)
+  impressions  Int      @default(0) // times recommended
+  conversions  Int      @default(0) // times user engaged after recommendation
+  updatedAt    DateTime @updatedAt
+
+  @@map("bandit_states")
+}
+
+// ─── Recommendation: User Behavior Logs ──────────────────
+// Implicit feedback untuk sistem rekomendasi
+// Action weights: search=1, click=2, play=3, play_long=4, wishlist=4, cart=5, download=6, purchase=6
+
+model UserBehaviorLog {
+  id           String   @id @default(uuid())
+  userId       String
+  audioAssetId String?  // null kalau action = 'search' tanpa klik sound
+  action       String   // 'search'|'click'|'play'|'play_long'|'wishlist'|'cart'|'download'|'purchase'
+  weight       Int      @default(1) // bobot preferensi berdasarkan action
+  searchQuery  String?  // isi search kalau action='search'
+  categorySlug String?  // kategori yang diakses
+  tagSlugs     String[] // tags dari sound yang diinteraksi
+  moodValue    String?  // mood dari sound yang diinteraksi
+  sessionId    String?  // untuk grouping per sesi
+  createdAt    DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, audioAssetId])
+  @@index([action])
+  @@map("user_behavior_logs")
 }

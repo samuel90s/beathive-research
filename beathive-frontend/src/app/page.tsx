@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import RecommendedSection from '@/components/recommendations/RecommendedSection';
 
 interface Category {
   id: string;
@@ -159,6 +160,9 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* ─── Recommended / Trending ────────────────────────── */}
+      <RecommendedSection mode="personalized" limit={10} />
 
       {/* ─── Categories ───────────────────────────────────── */}
       {categories.length > 0 && (

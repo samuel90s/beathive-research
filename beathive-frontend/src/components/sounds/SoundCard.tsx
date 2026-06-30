@@ -9,6 +9,7 @@ import { useDownload } from '@/lib/hooks/useDownload';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { formatDuration } from '@/lib/utils';
 import { toast } from '@/lib/store/toast.store';
+import { recommendationsApi } from '@/lib/api/recommendations';
 import type { AudioAsset } from '@/types';
 import clsx from 'clsx';
 
@@ -54,7 +55,7 @@ function SoundCard({ sound }: Props) {
   const pause = usePlayerStore(s => s.pause);
   const progress = usePlayerStore(s => s.currentTrack?.id === sound.id ? s.progress : 0);
   const { addItem, removeItem, hasItem } = useCartStore();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const { download, downloading } = useDownload();
   const { toggle: toggleWishlist, loadingId } = useWishlist();
   const [liked, setLiked] = useState(sound.isLiked ?? false);
@@ -72,8 +73,13 @@ function SoundCard({ sound }: Props) {
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isActive) {
-      isCurrentlyPlaying ? pause() : usePlayerStore.getState().resume();
+      if (isCurrentlyPlaying) {
+        pause();
+      } else {
+        usePlayerStore.getState().resume();
+      }
     } else {
+      if (isAuthenticated) recommendationsApi.logBehavior('play', { audioAssetId: sound.id });
       play(sound);
     }
   };
@@ -82,6 +88,7 @@ function SoundCard({ sound }: Props) {
     e.stopPropagation();
     try {
       await download(sound.id, sound.slug, sound.format);
+      if (isAuthenticated) recommendationsApi.logBehavior('download', { audioAssetId: sound.id });
     } catch (err: any) {
       toast.error(err.message || 'Download gagal');
     }
@@ -90,17 +97,24 @@ function SoundCard({ sound }: Props) {
   const handleWishlist = async (e: React.MouseEvent) => {
     e.stopPropagation();
     await toggleWishlist(sound.id, liked, (v) => setLiked(v));
+    if (isAuthenticated && !liked) recommendationsApi.logBehavior('wishlist', { audioAssetId: sound.id });
   };
 
   const handleCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (inCart) removeItem(sound.id);
-    else addItem(sound, 'personal');
+    else {
+      addItem(sound, 'personal');
+      if (isAuthenticated) recommendationsApi.logBehavior('cart', { audioAssetId: sound.id });
+    }
   };
 
   return (
     <div
-      onClick={() => play(sound)}
+      onClick={() => {
+        if (isAuthenticated) recommendationsApi.logBehavior('play', { audioAssetId: sound.id });
+        play(sound);
+      }}
       className={clsx(
         'group rounded-xl border cursor-pointer flex flex-col overflow-hidden transition-all duration-150',
         isActive
@@ -117,6 +131,12 @@ function SoundCard({ sound }: Props) {
             progress={isActive ? progress : 0}
           />
         </div>
+
+        {sound.similarityScore !== undefined && sound.similarityScore > 0 && (
+          <div className="absolute left-3 top-3 z-10 rounded-full border border-accent/30 bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent-bright shadow-sm">
+            {sound.similarityScore}% Match
+          </div>
+        )}
 
         {/* Play button */}
         <button
@@ -148,7 +168,10 @@ function SoundCard({ sound }: Props) {
         <div>
           <Link
             href={`/sounds/${sound.slug}`}
-            onClick={e => e.stopPropagation()}
+            onClick={e => {
+              e.stopPropagation();
+              if (isAuthenticated) recommendationsApi.logBehavior('click', { audioAssetId: sound.id });
+            }}
             className={clsx(
               'text-[13px] font-semibold leading-snug line-clamp-2 block transition-colors',
               isActive ? 'text-slate-900 dark:text-white' : 'text-slate-900 hover:text-accent-bright dark:text-[#c4c6d8] dark:hover:text-white',
@@ -191,6 +214,12 @@ function SoundCard({ sound }: Props) {
               </span>
             )}
           </div>
+        )}
+
+        {sound.recommendationReason && (
+          <p className="line-clamp-2 border-t border-rim pt-2 text-[11px] leading-relaxed text-slate-400 dark:border-white/[0.05] dark:text-[#5a5d72]">
+            {sound.recommendationReason}
+          </p>
         )}
 
         {/* Bottom row */}
@@ -253,7 +282,7 @@ function SoundCard({ sound }: Props) {
                     ? 'bg-accent/20 text-accent-bright border border-accent/20'
                     : 'bg-accent text-white hover:bg-accent-dim',
                 )}
-                title={inCart ? 'Hapus dari keranjang' : `Tambah ke keranjang`}
+                title={inCart ? 'Remove from cart' : 'Add to cart'}
               >
                 {inCart ? (
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>

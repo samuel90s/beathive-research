@@ -1,0 +1,20 @@
+{
+  "label": "Simulated BeatHive recommendation evaluation dataset",
+  "prefix": "SIM-EVAL-2026",
+  "users": 20,
+  "assets": 120,
+  "behaviorLogs": 6400,
+  "downloads": 800,
+  "wishlists": 800,
+  "ratings": 800,
+  "paidOrders": 400,
+  "evaluation": {
+    "usersEvaluated": 20,
+    "k": 10,
+    "precisionAt10": 0.8000000000000002,
+    "recallAt10": 1,
+    "ndcgAt10": 1,
+    "mapAt10": 1
+  },
+  "generatedAt": "2026-06-27T04:22:58.796Z"
+}

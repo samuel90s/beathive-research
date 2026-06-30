@@ -26,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </svg>
             </div>
             <h2 className="text-base font-semibold text-gray-900 mb-1">Terjadi Kesalahan</h2>
-            <p className="text-sm text-gray-400 mb-5">Halaman ini mengalami error tak terduga. Coba muat ulang halaman.</p>
+            <p className="text-sm text-gray-400 mb-5">This page encountered an unexpected error. Try refreshing the page.</p>
             <button
               onClick={() => { this.setState({ hasError: false, message: '' }); window.location.reload(); }}
               className="px-5 py-2.5 bg-accent text-white text-sm font-medium rounded-xl hover:bg-accent-dim transition-colors"

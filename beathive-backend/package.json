@@ -1,7 +1,7 @@
 {
   "name": "beathive-backend",
   "version": "1.0.0",
-  "description": "Backend API untuk BeatHive — platform stock sound effect",
+  "description": "Backend API for BeatHive - platform stock sound effect",
   "main": "index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -12,7 +12,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "npx tsx prisma/seed.ts",
-    "cleanup:production": "node scripts/prepare-production-data.js"
+    "cleanup:production": "node scripts/prepare-production-data.js",
+    "simulate:samx": "node scripts/simulate-samx-activity.js",
+    "seed:evaluation": "node scripts/seed-evaluation-dataset.js"
   },
   "jest": {
     "moduleFileExtensions": [

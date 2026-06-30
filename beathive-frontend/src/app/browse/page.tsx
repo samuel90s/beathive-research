@@ -1,14 +1,17 @@
 // src/app/browse/page.tsx
 'use client';
 import { Suspense, useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSounds } from '@/lib/hooks/useSounds';
 import SoundCard from '@/components/sounds/SoundCard';
 import type { SoundFilters } from '@/types';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import clsx from 'clsx';
+import BrowseRecommendations from '@/components/recommendations/BrowseRecommendations';
+import { recommendationsApi } from '@/lib/api/recommendations';
+import { useAuthStore } from '@/lib/store/auth.store';
 
-// ─── Category + Subcategory data ──────────────────────────────────────────────
+// â”€â”€â”€ Category + Subcategory data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const SFX_CATS = [
   {
@@ -184,7 +187,7 @@ const MUSIC_CATS = [
 const FEATURED_SFX = SFX_CATS.slice(0, 8);
 const FEATURED_MUSIC = MUSIC_CATS.slice(0, 8);
 
-// ─── Category Icons (SVG paths) ───────────────────────────────────────────────
+// â”€â”€â”€ Category Icons (SVG paths) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const CAT_ICONS: Record<string, React.ReactNode> = {
   'foley': (
@@ -387,23 +390,23 @@ const CAT_ICONS: Record<string, React.ReactNode> = {
 };
 
 const SORT_OPTIONS = [
-  { value: 'newest',     label: 'Terbaru' },
-  { value: 'popular',    label: 'Terpopuler' },
+  { value: 'newest',     label: 'Newest' },
+  { value: 'popular',    label: 'Most Popular' },
   { value: 'trending',   label: 'Trending' },
-  { value: 'mostplayed', label: 'Paling Diputar' },
-  { value: 'price_low',  label: 'Termurah' },
-  { value: 'price_high', label: 'Termahal' },
+  { value: 'mostplayed', label: 'Most Played' },
+  { value: 'price_low',  label: 'Price: Low to High' },
+  { value: 'price_high', label: 'Price: High to Low' },
 ];
 
 const ACCESS_FILTERS = [
-  { value: '',         label: 'Semua' },
-  { value: 'FREE',     label: 'Gratis' },
+  { value: '',         label: 'All' },
+  { value: 'FREE',     label: 'Free' },
   { value: 'PRO',      label: 'Pro' },
-  { value: 'PURCHASE', label: 'Beli Satuan' },
+  { value: 'PURCHASE', label: 'Buy Individually' },
 ];
 
 const LICENSE_FILTERS = [
-  { value: '', label: 'Semua Lisensi' },
+  { value: '', label: 'All Licenses' },
   { value: 'personal', label: 'Personal' },
   { value: 'commercial', label: 'Commercial' },
 ];
@@ -430,7 +433,7 @@ const MUSIC_MOODS = [
   { value: 'tense', label: 'Tense' },
 ];
 
-// ─── Category Card ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Category Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function CategoryCard({ cat, onClick }: {
   cat: { slug: string; name: string; gradient: string; desc: string; subcats: string[] };
@@ -465,7 +468,7 @@ function CategoryCard({ cat, onClick }: {
   );
 }
 
-// ─── Category Landing (no category selected) ─────────────────────────────────
+// â”€â”€â”€ Category Landing (no category selected) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function CategoryLanding({ soundType, onCategoryClick, onSubcatClick, onMoodClick }: {
   soundType: string;
@@ -474,124 +477,142 @@ function CategoryLanding({ soundType, onCategoryClick, onSubcatClick, onMoodClic
   onMoodClick: (mood: string) => void;
 }) {
   const allCats = soundType === 'music' ? MUSIC_CATS : soundType === 'sfx' ? SFX_CATS : [...SFX_CATS, ...MUSIC_CATS];
+  const [activeTab, setActiveTab] = useState<'browse' | 'recommended'>('browse');
 
   return (
     <div className="px-6 py-6 pb-28">
-
-      {/* Type selector */}
-      <div className="flex items-center gap-1 mb-8">
+      <div className="flex items-center gap-1 mb-8 overflow-x-auto scrollbar-none">
+        <button
+          onClick={() => setActiveTab('recommended')}
+          className={clsx(
+            'px-4 py-2 rounded-lg text-sm font-medium transition-all flex-shrink-0',
+            activeTab === 'recommended' ? 'bg-accent text-white' : 'text-[#6b6f82] hover:text-white hover:bg-white/[0.06]',
+          )}
+        >
+          Recommended
+        </button>
         {[
-          { value: '', label: 'Semua' },
+          { value: '', label: 'All' },
           { value: 'sfx', label: 'Sound Effects' },
           { value: 'music', label: 'Music' },
         ].map(opt => (
-          <button key={opt.value}
-            onClick={() => opt.value === '' ? onCategoryClick('') : onSubcatClick('__type__', opt.value)}
+          <button
+            key={opt.value}
+            onClick={() => {
+              setActiveTab('browse');
+              if (opt.value === '') {
+                onCategoryClick('');
+              } else {
+                onSubcatClick('__type__', opt.value);
+              }
+            }}
             className={clsx(
-              'px-4 py-2 rounded-lg text-sm font-medium transition-all',
-              soundType === opt.value ? 'bg-accent text-white' : 'text-[#6b6f82] hover:text-white hover:bg-white/[0.06]',
-            )}>
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all flex-shrink-0',
+              activeTab === 'browse' && soundType === opt.value ? 'bg-accent text-white' : 'text-[#6b6f82] hover:text-white hover:bg-white/[0.06]',
+            )}
+          >
             {opt.label}
           </button>
         ))}
       </div>
 
-      {/* Sound Effects section */}
-      {soundType !== 'music' && (
-        <section className="mb-10">
-          <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Sound Effects</h2>
-            <div className="flex-1 h-px bg-rim" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {FEATURED_SFX.map(cat => (
-              <CategoryCard key={cat.slug} cat={cat} onClick={() => onCategoryClick(cat.slug)} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Music section */}
-      {soundType !== 'sfx' && (
-        <section className="mb-10">
-          <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Music</h2>
-            <div className="flex-1 h-px bg-rim" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {FEATURED_MUSIC.map(cat => (
-              <CategoryCard key={cat.slug} cat={cat} onClick={() => onCategoryClick(cat.slug)} />
-            ))}
-          </div>
-          <div className="mt-4 rounded-2xl border border-rim bg-surface p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <h3 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Mood Musik</h3>
-              <div className="flex-1 h-px bg-rim" />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {MUSIC_MOODS.filter(m => m.value).map(mood => (
-                <button
-                  key={mood.value}
-                  onClick={() => onMoodClick(mood.value)}
-                  className="px-3 py-1.5 rounded-full border border-teal/20 bg-teal/10 text-teal text-xs font-medium capitalize hover:bg-teal/15 hover:border-teal/40 transition-colors"
-                >
-                  {mood.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* All categories + subcategories */}
-      <section>
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Semua Kategori</h2>
-          <div className="flex-1 h-px bg-rim" />
+      {activeTab === 'recommended' ? (
+        <div className="-mx-6 -mt-2">
+          <BrowseRecommendations limit={12} />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
-          {allCats.map(cat => (
-            <div
-              key={cat.slug}
-              className="rounded-2xl border border-rim bg-surface p-4 shadow-sm hover:border-accent/25 hover:bg-lift transition-all group"
-            >
-              {/* Category header */}
-              <button
-                onClick={() => onCategoryClick(cat.slug)}
-                className="flex items-center gap-3 mb-3 w-full text-left"
-              >
-                <div className={`w-9 h-9 rounded-xl flex-shrink-0 bg-gradient-to-br ${cat.gradient} shadow-sm`} />
-                <div className="min-w-0">
-                  <span className="block text-sm font-bold text-[#111827] dark:text-[#f4f5fb] group-hover:text-accent-bright transition-colors">
-                    {cat.name}
-                  </span>
-                  <span className="text-[11px] text-[#64748b] dark:text-[#6b6f82]">
-                    {cat.subcats.length} subkategori
-                  </span>
-                </div>
-              </button>
-
-              {/* Subcategory list */}
-              <div className="flex flex-wrap gap-1.5">
-                {cat.subcats.map(sub => (
-                  <button
-                    key={sub}
-                    onClick={() => onSubcatClick(cat.slug, sub)}
-                    className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-accent/40 hover:bg-accent/10 hover:text-accent-dim dark:border-white/[0.06] dark:bg-white/[0.04] dark:text-[#8b8fa8] dark:hover:text-accent-bright transition-colors"
-                  >
-                    {sub}
-                  </button>
+      ) : (
+        <>
+          {soundType !== 'music' && (
+            <section className="mb-10">
+              <div className="flex items-center gap-3 mb-4">
+                <h2 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Sound Effects</h2>
+                <div className="flex-1 h-px bg-rim" />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {FEATURED_SFX.map(cat => (
+                  <CategoryCard key={cat.slug} cat={cat} onClick={() => onCategoryClick(cat.slug)} />
                 ))}
               </div>
+            </section>
+          )}
+
+          {soundType !== 'sfx' && (
+            <section className="mb-10">
+              <div className="flex items-center gap-3 mb-4">
+                <h2 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Music</h2>
+                <div className="flex-1 h-px bg-rim" />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {FEATURED_MUSIC.map(cat => (
+                  <CategoryCard key={cat.slug} cat={cat} onClick={() => onCategoryClick(cat.slug)} />
+                ))}
+              </div>
+              <div className="mt-4 rounded-2xl border border-rim bg-surface p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <h3 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">Mood Musik</h3>
+                  <div className="flex-1 h-px bg-rim" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {MUSIC_MOODS.filter(m => m.value).map(mood => (
+                    <button
+                      key={mood.value}
+                      onClick={() => onMoodClick(mood.value)}
+                      className="px-3 py-1.5 rounded-full border border-teal/20 bg-teal/10 text-teal text-xs font-medium capitalize hover:bg-teal/15 hover:border-teal/40 transition-colors"
+                    >
+                      {mood.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          <section>
+            <div className="flex items-center gap-3 mb-4">
+              <h2 className="text-[11px] font-bold text-[#5a5d72] uppercase tracking-[0.12em]">All Categories</h2>
+              <div className="flex-1 h-px bg-rim" />
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+              {allCats.map(cat => (
+                <div
+                  key={cat.slug}
+                  className="rounded-2xl border border-rim bg-surface p-4 shadow-sm hover:border-accent/25 hover:bg-lift transition-all group"
+                >
+                  <button
+                    onClick={() => onCategoryClick(cat.slug)}
+                    className="flex items-center gap-3 mb-3 w-full text-left"
+                  >
+                    <div className={`w-9 h-9 rounded-xl flex-shrink-0 bg-gradient-to-br ${cat.gradient} shadow-sm`} />
+                    <div className="min-w-0">
+                      <span className="block text-sm font-bold text-[#111827] dark:text-[#f4f5fb] group-hover:text-accent-bright transition-colors">
+                        {cat.name}
+                      </span>
+                      <span className="text-[11px] text-[#64748b] dark:text-[#6b6f82]">
+                        {cat.subcats.length} subcategories
+                      </span>
+                    </div>
+                  </button>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {cat.subcats.map(sub => (
+                      <button
+                        key={sub}
+                        onClick={() => onSubcatClick(cat.slug, sub)}
+                        className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-accent/40 hover:bg-accent/10 hover:text-accent-dim dark:border-white/[0.06] dark:bg-white/[0.04] dark:text-[#8b8fa8] dark:hover:text-accent-bright transition-colors"
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }
-
-// ─── Sound List (category selected) ───────────────────────────────────────────
 
 function SoundList({ category, filters, onBack }: {
   category: { slug: string; name: string; subcats: string[] } | null;
@@ -649,7 +670,16 @@ function SoundList({ category, filters, onBack }: {
   }), [access, licenseType, parsedPriceMax, parsedPriceMin, debouncedSearch, filters, genre, mood, page, sort, subcat]);
 
   const { data, isLoading, isFetching, isError } = useSounds(activeFilters, true);
+  const { isAuthenticated } = useAuthStore();
   const isMusic = filters.soundType === 'music' || (category ? MUSIC_CATS.some(c => c.slug === category.slug) : false);
+
+  useEffect(() => {
+    if (!isAuthenticated || !debouncedSearch.trim()) return;
+    recommendationsApi.logBehavior('search', {
+      searchQuery: debouncedSearch.trim(),
+      categorySlug: filters.categorySlug,
+    });
+  }, [debouncedSearch, filters.categorySlug, isAuthenticated]);
 
   return (
     <div className="flex flex-col h-full">
@@ -663,7 +693,7 @@ function SoundList({ category, filters, onBack }: {
           </button>
           <span className="text-[#2a2c3e]">/</span>
           <span className="text-white font-medium">{category?.name ?? (filters.soundType === 'music' ? 'Music' : 'Sounds')}</span>
-          {isFetching && !isLoading && <span className="text-accent-bright text-xs ml-auto">Memuat...</span>}
+          {isFetching && !isLoading && <span className="text-accent-bright text-xs ml-auto">Loading...</span>}
           {!isFetching && data && <span className="text-[#3a3c4e] text-xs ml-auto">{data.pagination.total} sounds</span>}
         </div>
 
@@ -674,7 +704,7 @@ function SoundList({ category, filters, onBack }: {
               onClick={() => setSubcat('')}
               className={clsx('px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-all',
                 !subcat ? 'bg-white text-black' : 'bg-white/[0.06] text-[#8b8fa8] hover:bg-white/10 hover:text-white')}>
-              Semua
+              All
             </button>
             {category.subcats.map(s => (
               <button key={s}
@@ -698,7 +728,7 @@ function SoundList({ category, filters, onBack }: {
               type="text"
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
-              placeholder="Cari dalam kategori..."
+              placeholder="Search in category..."
               className="w-full pl-9 pr-3 py-1.5 input-dark rounded-lg text-sm"
             />
           </div>
@@ -738,7 +768,7 @@ function SoundList({ category, filters, onBack }: {
               inputMode="numeric"
               value={priceMin}
               onChange={e => setPriceMin(e.target.value)}
-              placeholder="Harga min"
+              placeholder="Min price"
               className="w-28 px-3 py-1.5 input-dark rounded-lg text-xs"
             />
             <span className="text-xs text-[#4a4d5e]">-</span>
@@ -748,7 +778,7 @@ function SoundList({ category, filters, onBack }: {
               inputMode="numeric"
               value={priceMax}
               onChange={e => setPriceMax(e.target.value)}
-              placeholder="Harga max"
+              placeholder="Max price"
               className="w-28 px-3 py-1.5 input-dark rounded-lg text-xs"
             />
             {(access || licenseType || priceMin || priceMax || genre || mood || subcat || searchInput || sort !== 'newest') && (
@@ -796,15 +826,15 @@ function SoundList({ category, filters, onBack }: {
 
         {isError && (
           <div className="text-center py-16">
-            <p className="text-sm text-[#5a5d72]">Gagal memuat sounds. Coba lagi.</p>
+            <p className="text-sm text-[#5a5d72]">Failed to load sounds. Please try again.</p>
           </div>
         )}
 
         {!isLoading && !isError && data?.items.length === 0 && (
           <div className="text-center py-20 card rounded-2xl">
-            <p className="text-base font-semibold text-[#c4c6d8]">Belum ada sound</p>
+            <p className="text-base font-semibold text-[#c4c6d8]">No sounds found</p>
             <p className="text-sm text-[#5a5d72] mt-1">
-              {subcat ? `Tidak ada sound "${subcat}" di kategori ini` : 'Belum ada sound di kategori ini'}
+              {subcat ? `No sounds matching "${subcat}" in this category` : 'No sounds in this category yet'}
             </p>
             {(subcat || searchInput || access || licenseType || priceMin || priceMax || genre || mood) && (
               <button
@@ -833,7 +863,7 @@ function SoundList({ category, filters, onBack }: {
                   Prev
                 </button>
                 <span className="text-sm text-[#5a5d72]">
-                  Halaman {data.pagination.page} dari {data.pagination.totalPages}
+                  Page {data.pagination.page} of {data.pagination.totalPages}
                 </span>
                 <button
                   onClick={() => setPage(p => Math.min(data.pagination.totalPages, p + 1))}
@@ -851,9 +881,10 @@ function SoundList({ category, filters, onBack }: {
   );
 }
 
-// ─── Main Browse ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Browse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function BrowseContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [categorySlug, setCategorySlug] = useState(searchParams.get('categorySlug') ?? '');
@@ -883,7 +914,7 @@ function BrowseContent() {
     const p = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => { if (v) p.set(k, v); });
     const query = p.toString();
-    window.location.assign(query ? `/browse?${query}` : '/browse');
+    router.push(query ? `/browse?${query}` : '/browse');
   };
 
   const handleCategoryClick = (slug: string) => {
@@ -958,3 +989,5 @@ export default function BrowsePage() {
     </Suspense>
   );
 }
+
+

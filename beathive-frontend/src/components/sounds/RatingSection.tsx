@@ -148,7 +148,7 @@ export default function RatingSection({ soundId, canReview = false }: { soundId:
             </div>
             <div className="flex gap-3 flex-shrink-0">
               <button onClick={() => setShowForm(true)} className="text-xs text-accent-bright hover:underline">Edit</button>
-              <button onClick={handleDelete} className="text-xs text-red-400 hover:underline">Hapus</button>
+              <button onClick={handleDelete} className="text-xs text-red-400 hover:underline">Delete</button>
             </div>
           </div>
         ) : !showForm ? (

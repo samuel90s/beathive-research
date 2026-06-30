@@ -28,16 +28,16 @@ type CreatorAssetFilter = 'all' | 'sfx' | 'music';
 type CreatorSort = 'popular' | 'latest' | 'plays' | 'downloads';
 
 const assetFilters: { value: CreatorAssetFilter; label: string }[] = [
-  { value: 'all', label: 'Semua' },
+  { value: 'all', label: 'All' },
   { value: 'sfx', label: 'SFX' },
   { value: 'music', label: 'Music' },
 ];
 
 const sortOptions: { value: CreatorSort; label: string }[] = [
-  { value: 'popular', label: 'Terpopuler' },
-  { value: 'latest', label: 'Terbaru' },
-  { value: 'plays', label: 'Paling Diputar' },
-  { value: 'downloads', label: 'Paling Diunduh' },
+  { value: 'popular', label: 'Most Popular' },
+  { value: 'latest', label: 'Latest' },
+  { value: 'plays', label: 'Most Played' },
+  { value: 'downloads', label: 'Most Downloaded' },
 ];
 
 export default function CreatorProfilePage() {
@@ -136,7 +136,7 @@ export default function CreatorProfilePage() {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-semibold text-white">{profile.name}</h1>
-            <p className="text-sm text-slate-500 dark:text-[#5a5d72] mt-0.5">Creator sejak {joinYear}</p>
+            <p className="text-sm text-slate-500 dark:text-[#5a5d72] mt-0.5">Creator since {joinYear}</p>
             {profile.bio && (
               <p className="text-sm text-[#8b8fa8] mt-2 leading-relaxed">{profile.bio}</p>
             )}
@@ -155,7 +155,7 @@ export default function CreatorProfilePage() {
             )}
           </div>
           <Link href={`/browse?authorId=${encodeURIComponent(profile.id)}`} className="btn-accent rounded-xl px-4 py-2.5 text-sm font-semibold">
-            Lihat Semua Sound
+            View All Sounds
           </Link>
         </div>
 

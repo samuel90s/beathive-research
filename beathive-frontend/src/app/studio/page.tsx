@@ -163,7 +163,7 @@ export default function StudioPage() {
         queryClient.setQueryData<AudioAsset[]>(['my-sounds'], prev =>
           prev?.map(s => s.id === sound.id ? { ...s, durationMs: data.durationMs } : s) ?? []);
       }
-    } catch { toast.error('Gagal menghitung ulang durasi'); }
+    } catch { toast.error('Failed to recalculate duration'); }
     finally { setFixingId(null); }
   };
 
@@ -189,7 +189,7 @@ export default function StudioPage() {
     const editPriceNum = parseInt(editForm.price, 10);
     if (isNaN(editPriceNum) || editPriceNum < 0) { setEditError('Harga harus berupa angka bulat non-negatif'); return; }
     if (editPriceNum > 10_000_000) { setEditError('Harga maksimal Rp 10.000.000'); return; }
-    if (editForm.accessLevel === 'PURCHASE' && editPriceNum <= 0) { setEditError('Harga harus lebih dari 0 untuk mode Paid'); return; }
+    if (editForm.accessLevel === 'PURCHASE' && editPriceNum <= 0) { setEditError('Price must be greater than 0 for Paid mode'); return; }
     setSaving(true); setEditError(null);
     try {
       const tagSlugs = editForm.tags.split(',').map(t => t.trim().toLowerCase().replace(/\s+/g, '-')).filter(Boolean);
@@ -208,7 +208,7 @@ export default function StudioPage() {
       setEditSound(null); toast.success('Perubahan berhasil disimpan');
     } catch (err: any) {
       const msg = err.response?.data?.message;
-      setEditError(Array.isArray(msg) ? msg.join(', ') : msg || 'Gagal menyimpan');
+      setEditError(Array.isArray(msg) ? msg.join(', ') : msg || 'Failed to save');
     } finally { setSaving(false); }
   };
 
@@ -282,7 +282,7 @@ export default function StudioPage() {
     const resubmitPriceNum = parseInt(resubmitForm.price, 10);
     if (isNaN(resubmitPriceNum) || resubmitPriceNum < 0) { setResubmitError('Harga harus berupa angka bulat non-negatif'); return; }
     if (resubmitPriceNum > 10_000_000) { setResubmitError('Harga maksimal Rp 10.000.000'); return; }
-    if (resubmitForm.accessLevel === 'PURCHASE' && resubmitPriceNum <= 0) { setResubmitError('Harga harus lebih dari 0 untuk mode Paid'); return; }
+    if (resubmitForm.accessLevel === 'PURCHASE' && resubmitPriceNum <= 0) { setResubmitError('Price must be greater than 0 for Paid mode'); return; }
     setResubmitting(true);
     setResubmitError(null);
     try {
@@ -307,7 +307,7 @@ export default function StudioPage() {
       toast.success('Sound berhasil disubmit ulang! Menunggu review admin.');
     } catch (err: any) {
       const msg = err.response?.data?.message;
-      setResubmitError(Array.isArray(msg) ? msg.join(', ') : msg || 'Gagal submit ulang. Coba lagi.');
+      setResubmitError(Array.isArray(msg) ? msg.join(', ') : msg || 'Failed to resubmit. Please try again.');
     } finally {
       setResubmitting(false);
     }
@@ -326,10 +326,10 @@ export default function StudioPage() {
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFile) { setUploadError('Pilih file audio terlebih dahulu'); return; }
+    if (!selectedFile) { setUploadError('Please select an audio file first'); return; }
     if (!form.title.trim()) { setUploadError('Judul wajib diisi'); return; }
     if (form.title.trim().length > 120) { setUploadError('Judul maksimal 120 karakter'); return; }
-    if (!form.categorySlug) { setUploadError('Pilih kategori terlebih dahulu'); return; }
+    if (!form.categorySlug) { setUploadError('Please select a category first'); return; }
     // Validasi harga: harus angka bulat non-negatif
     const priceNum = parseInt(form.price, 10);
     if (isNaN(priceNum) || priceNum < 0 || String(priceNum) !== form.price.replace(/^0+(?=\d)/, '')) {
@@ -337,7 +337,7 @@ export default function StudioPage() {
       return;
     }
     if (priceNum > 10_000_000) { setUploadError('Harga maksimal Rp 10.000.000'); return; }
-    if (form.accessLevel === 'PURCHASE' && priceNum <= 0) { setUploadError('Harga harus lebih dari 0 untuk mode Paid'); return; }
+    if (form.accessLevel === 'PURCHASE' && priceNum <= 0) { setUploadError('Price must be greater than 0 for Paid mode'); return; }
     setUploading(true); setUploadError(null);
     try {
       const formData = new FormData();
@@ -382,10 +382,10 @@ export default function StudioPage() {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ amountRp: amount }),
       });
-      if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Gagal mengajukan penarikan'); }
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed to submit withdrawal'); }
       toast.success('Permintaan penarikan berhasil diajukan');
       setShowWithdrawForm(false); setWithdrawAmount(''); refetchWallet();
-    } catch (err: any) { toast.error(err.message || 'Gagal'); }
+    } catch (err: any) { toast.error(err.message || 'Failed'); }
     finally { setWithdrawLoading(false); }
   };
 
@@ -403,7 +403,7 @@ export default function StudioPage() {
             <p className="text-sm text-[#c4c6d8] mb-5 leading-relaxed">{confirmModal.message}</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-rim text-[#8b8fa8] hover:bg-white/[0.05] transition-colors">Tidak</button>
-              <button onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }} className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors">Ya, batalkan</button>
+              <button onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }} className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors">Ya, Cancelkan</button>
             </div>
           </div>
         </div>
@@ -506,7 +506,7 @@ export default function StudioPage() {
               <div className="w-14 h-14 rounded-2xl bg-accent/[0.08] flex items-center justify-center mx-auto mb-4">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F7941D" strokeWidth="1.5" strokeLinecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
               </div>
-              <p className="text-base font-semibold text-white">Belum ada sound</p>
+              <p className="text-base font-semibold text-white">No sounds yet</p>
               <p className="text-sm text-[#5a5d72] mt-1 mb-5">Upload sound pertama kamu dan mulai earning</p>
               <button onClick={() => setShowModal(true)} className="px-5 py-2.5 btn-accent rounded-xl text-sm font-semibold">Upload Sekarang</button>
             </div>
@@ -622,7 +622,7 @@ export default function StudioPage() {
                 <button onClick={handleWithdraw} disabled={withdrawLoading} className="px-5 py-2.5 text-sm font-semibold btn-accent rounded-xl disabled:opacity-50">
                   {withdrawLoading ? 'Memproses...' : 'Ajukan'}
                 </button>
-                <button onClick={() => setShowWithdrawForm(false)} className="px-3 py-2.5 text-sm border border-rim text-[#6b6f82] rounded-xl hover:bg-white/[0.04]">Batal</button>
+                <button onClick={() => setShowWithdrawForm(false)} className="px-3 py-2.5 text-sm border border-rim text-[#6b6f82] rounded-xl hover:bg-white/[0.04]">Cancel</button>
               </div>
               <p className="text-xs text-[#3a3c4e] mt-2">
                 Dana ke rekening bank yang terdaftar di{' '}
@@ -640,7 +640,7 @@ export default function StudioPage() {
                 <div className="w-10 h-10 rounded-full bg-white/[0.03] flex items-center justify-center mx-auto mb-3">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b6f82" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                 </div>
-                <p className="text-sm text-[#6b6f82]">Belum ada penarikan</p>
+                <p className="text-sm text-[#6b6f82]">No withdrawals yet</p>
                 <p className="text-xs text-[#3a3c4e] mt-1">Upload sound & mulai earning dulu</p>
               </div>
             ) : (
@@ -754,7 +754,7 @@ export default function StudioPage() {
               <div>
                 <label className={labelCls}>Kategori *</label>
                 <select value={resubmitForm.categorySlug} onChange={setResubmit('categorySlug')} required className={`${inputCls} bg-lift`}>
-                  <option value="" disabled>Pilih Kategori...</option>
+                  <option value="" disabled>Select Category...</option>
                   {categoriesByType(resubmitForm.assetKind).map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                 </select>
               </div>
@@ -812,7 +812,7 @@ export default function StudioPage() {
               )}
               {resubmitError && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{resubmitError}</p>}
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setResubmitSound(null)} className="flex-1 py-2.5 btn-ghost rounded-xl text-sm font-medium">Batal</button>
+                <button type="button" onClick={() => setResubmitSound(null)} className="flex-1 py-2.5 btn-ghost rounded-xl text-sm font-medium">Cancel</button>
                 <button type="submit" disabled={resubmitting} className="flex-1 py-2.5 btn-accent rounded-xl text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
                   {resubmitting ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Mengirim...</> : 'Submit Ulang'}
                 </button>
@@ -857,7 +857,7 @@ export default function StudioPage() {
               <div>
                 <label className={labelCls}>Kategori *</label>
                 <select value={editForm.categorySlug} onChange={setEdit('categorySlug')} required className={`${inputCls} bg-lift`}>
-                  <option value="" disabled>Pilih Kategori...</option>
+                  <option value="" disabled>Select Category...</option>
                   {categoriesByType(editForm.assetKind).map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                 </select>
               </div>
@@ -916,9 +916,9 @@ export default function StudioPage() {
               {editForm.accessLevel !== 'FREE' && <p className="text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg">Mengubah harga atau akses akan mereset status review ke Pending.</p>}
               {editError && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{editError}</p>}
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setEditSound(null)} className="flex-1 py-2.5 btn-ghost rounded-xl text-sm font-medium">Batal</button>
+                <button type="button" onClick={() => setEditSound(null)} className="flex-1 py-2.5 btn-ghost rounded-xl text-sm font-medium">Cancel</button>
                 <button type="submit" disabled={saving} className="flex-1 py-2.5 btn-accent rounded-xl text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
-                  {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Menyimpan...</> : 'Simpan'}
+                  {saving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving...</> : 'Simpan'}
                 </button>
               </div>
             </form>
@@ -979,7 +979,7 @@ export default function StudioPage() {
               <div>
                 <label className={labelCls}>Kategori *</label>
                 <select value={form.categorySlug} onChange={set('categorySlug')} required className={`${inputCls} bg-lift`}>
-                  <option value="" disabled>Pilih Kategori...</option>
+                  <option value="" disabled>Select Category...</option>
                   {categoriesByType(form.assetKind).map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                 </select>
               </div>
@@ -1036,7 +1036,7 @@ export default function StudioPage() {
                 </div>
               )}
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 btn-ghost rounded-xl text-sm font-medium">Batal</button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 btn-ghost rounded-xl text-sm font-medium">Cancel</button>
                 <button type="submit" disabled={uploading} className="flex-1 py-2.5 btn-accent rounded-xl text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
                   {uploading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Mengupload...</> : 'Upload Sound'}
                 </button>
@@ -1049,3 +1049,4 @@ export default function StudioPage() {
     </div>
   );
 }
+

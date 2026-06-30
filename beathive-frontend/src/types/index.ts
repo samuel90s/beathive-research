@@ -1,4 +1,4 @@
-// src/types/index.ts
+﻿// src/types/index.ts
 
 export interface User {
   id: string;
@@ -110,7 +110,10 @@ export interface AudioAsset {
   author?: Author;
   publishedAt: string;
   createdAt?: string;
+  similarityScore?: number;
+  recommendationReason?: string;
 }
+
 
 export interface DownloadResult {
   downloadUrl: string;
@@ -234,3 +237,4 @@ export interface DownloadHistoryResponse {
     totalPages: number;
   };
 }
+

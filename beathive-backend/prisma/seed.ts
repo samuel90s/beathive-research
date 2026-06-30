@@ -162,130 +162,142 @@ async function main() {
   for (const g of allGenres) genreMap[g.slug] = g.id
 
   // ── SFX Assets ────────────────────────────────────────────
-  const sfxAssets = [
-    // Foley (3)
+  const sfxCatalog = [
     {
-      slug: 'footsteps-on-gravel',
-      title: 'Footsteps on Gravel',
-      description: 'Realistic footstep sounds walking on gravel path. Recorded with high-fidelity stereo microphones for maximum clarity.',
       categorySlug: 'foley',
-      accessLevel: 'FREE' as const,
-      price: 0,
-      durationMs: 8500,
-      fileSize: 1420000,
-      format: 'wav',
-      tags: ['footstep', 'realistic', 'short', 'sfx'],
-      subcategory: 'Footsteps',
+      subcategories: ['Footsteps', 'Clothing', 'Impact', 'Paper', 'Glass'],
+      tags: ['footstep', 'realistic', 'short', 'sfx', 'impact', 'paper', 'glass'],
+      mood: 'neutral',
+      titles: ['Soft Footsteps on Wood', 'Jacket Cloth Movement', 'Ceramic Cup Impact', 'Paper Bag Rustle', 'Glass Bottle Set Down'],
     },
     {
-      slug: 'glass-shatter-impact',
-      title: 'Glass Shatter Impact',
-      description: 'Dramatic glass breaking sound effect with multiple shards falling. Perfect for cinematic scenes and game impacts.',
-      categorySlug: 'foley',
-      accessLevel: 'PRO' as const,
-      price: 0,
-      durationMs: 3200,
-      fileSize: 540000,
-      format: 'wav',
-      tags: ['glass', 'impact', 'loud', 'realistic'],
-      subcategory: 'Impacts',
+      categorySlug: 'ambience',
+      subcategories: ['Indoor', 'Outdoor', 'Urban', 'Underwater', 'Weather'],
+      tags: ['ambient', 'loop', 'long', 'rain', 'wind', 'water', 'crowd'],
+      mood: 'calm',
+      titles: ['Quiet Apartment Room Tone', 'Open Park Afternoon', 'Dense City Sidewalk', 'Underwater Pool Bed', 'Light Rain Window Loop'],
     },
     {
-      slug: 'wooden-door-creak',
-      title: 'Wooden Door Creak',
-      description: 'Old wooden door slowly opening with a creepy creak. Ideal for horror games, film scenes, and haunted house ambiences.',
-      categorySlug: 'foley',
-      accessLevel: 'PURCHASE' as const,
-      price: 15000,
-      durationMs: 4800,
-      fileSize: 820000,
-      format: 'wav',
-      tags: ['wood', 'horror', 'realistic', 'dark'],
-      subcategory: 'Doors',
+      categorySlug: 'soundscape',
+      subcategories: ['Forest', 'Ocean', 'City', 'Space', 'Post-Apocalyptic'],
+      tags: ['ambient', 'loop', 'forest', 'ocean', 'sci-fi', 'dark', 'wind'],
+      mood: 'dark',
+      titles: ['Forest Dawn Soundscape', 'Wide Ocean Shoreline', 'Distant Neon City', 'Outer Space Drone Field', 'Abandoned Wasteland Wind'],
     },
+    {
+      categorySlug: 'nature',
+      subcategories: ['Rain', 'Wind', 'Thunder', 'Fire', 'Water'],
+      tags: ['nature', 'rain', 'wind', 'thunder', 'fire', 'water', 'loop'],
+      mood: 'calm',
+      titles: ['Gentle Rain on Leaves', 'Cold Mountain Wind', 'Rolling Thunder Distance', 'Small Campfire Crackle', 'Creek Water Flow'],
+    },
+    {
+      categorySlug: 'explosions',
+      subcategories: ['Small', 'Large', 'Impact', 'Debris', 'Distant'],
+      tags: ['explosion', 'impact', 'loud', 'cinematic', 'fire', 'hit'],
+      mood: 'epic',
+      titles: ['Small Dust Burst', 'Large Cinematic Blast', 'Concrete Impact Boom', 'Debris Shower Aftermath', 'Distant Battlefield Explosion'],
+    },
+    {
+      categorySlug: 'weapons',
+      subcategories: ['Guns', 'Blades', 'Bows', 'Futuristic', 'Impact'],
+      tags: ['weapon', 'gunshot', 'sword', 'impact', 'sci-fi', 'metal', 'hit'],
+      mood: 'tense',
+      titles: ['Pistol Shot Close', 'Sword Unsheathe Clean', 'Arrow Flyby Fast', 'Laser Rifle Charge', 'Shield Metal Impact'],
+    },
+    {
+      categorySlug: 'vehicles',
+      subcategories: ['Car', 'Motorcycle', 'Truck', 'Aircraft', 'Boat'],
+      tags: ['car', 'engine', 'loud', 'realistic', 'loop', 'water'],
+      mood: 'neutral',
+      titles: ['Car Engine Idle Loop', 'Motorcycle Pass By', 'Heavy Truck Brake', 'Jet Flyover Distance', 'Small Boat Motor Wake'],
+    },
+    {
+      categorySlug: 'ui-game',
+      subcategories: ['Click', 'Notification', 'Alert', 'Power-up', 'Menu'],
+      tags: ['ui', 'game', 'click', 'notification', 'short', 'electronic', 'sfx'],
+      mood: 'happy',
+      titles: ['Clean Button Click', 'Soft Notification Ping', 'Warning Alert Pulse', 'Arcade Power Up', 'Menu Select Blip'],
+    },
+    {
+      categorySlug: 'horror',
+      subcategories: ['Suspense', 'Jump Scare', 'Ambient', 'Monster', 'Breathing'],
+      tags: ['horror', 'dark', 'ambient', 'impact', 'reverb', 'sfx'],
+      mood: 'dark',
+      titles: ['Low Suspense Drone', 'Sharp Jump Scare Hit', 'Haunted Basement Ambience', 'Creature Growl Layer', 'Close Scared Breathing'],
+    },
+    {
+      categorySlug: 'human',
+      subcategories: ['Footsteps', 'Breathing', 'Crowd', 'Laughter', 'Voice'],
+      tags: ['footstep', 'crowd', 'applause', 'realistic', 'short', 'soft'],
+      mood: 'neutral',
+      titles: ['Sneaker Steps Hallway', 'Tired Breathing Close', 'Small Crowd Murmur', 'Friendly Group Laughter', 'Voice Effort Grunt'],
+    },
+    {
+      categorySlug: 'animals',
+      subcategories: ['Dog', 'Cat', 'Bird', 'Wild', 'Insects'],
+      tags: ['nature', 'bird', 'forest', 'realistic', 'short', 'ambient'],
+      mood: 'neutral',
+      titles: ['Dog Bark Single', 'Cat Meow Close', 'Morning Bird Chirps', 'Wild Animal Snarl', 'Night Insects Loop'],
+    },
+    {
+      categorySlug: 'electronic',
+      subcategories: ['Robot', 'Computer', 'Glitch', 'Machine', 'Sci-Fi'],
+      tags: ['electronic', 'sci-fi', 'glitch', 'loop', 'short', 'dark'],
+      mood: 'tense',
+      titles: ['Robot Servo Move', 'Computer Boot Sequence', 'Digital Glitch Burst', 'Machine Scanner Loop', 'Sci-Fi Door Open'],
+    },
+    {
+      categorySlug: 'comedy',
+      subcategories: ['Cartoon', 'Boing', 'Pop', 'Slide Whistle', 'Impact'],
+      tags: ['comedy', 'cartoon', 'bounce', 'impact', 'short', 'sfx'],
+      mood: 'happy',
+      titles: ['Cartoon Slip Fall', 'Rubber Boing Hit', 'Tiny Pop Accent', 'Slide Whistle Down', 'Silly Impact Bonk'],
+    },
+    {
+      categorySlug: 'magic',
+      subcategories: ['Spell', 'Enchant', 'Fantasy', 'Mystical', 'Impact'],
+      tags: ['magic', 'spell', 'whoosh', 'reverb', 'cinematic', 'sfx'],
+      mood: 'epic',
+      titles: ['Sparkle Spell Cast', 'Enchanted Aura Loop', 'Fantasy Portal Open', 'Mystical Whoosh Sweep', 'Magic Impact Burst'],
+    },
+    {
+      categorySlug: 'sports',
+      subcategories: ['Ball', 'Whistle', 'Crowd', 'Impact', 'Movement'],
+      tags: ['hit', 'impact', 'crowd', 'short', 'loud', 'realistic'],
+      mood: 'upbeat',
+      titles: ['Basketball Bounce Court', 'Referee Whistle Sharp', 'Stadium Crowd Cheer', 'Body Tackle Impact', 'Fast Whoosh Movement'],
+    },
+    {
+      categorySlug: 'industrial',
+      subcategories: ['Factory', 'Machine', 'Metal', 'Construction', 'Alarm'],
+      tags: ['metal', 'impact', 'loop', 'loud', 'realistic', 'electronic'],
+      mood: 'tense',
+      titles: ['Factory Conveyor Loop', 'Hydraulic Machine Press', 'Metal Pipe Drop', 'Construction Drill Burst', 'Industrial Warning Alarm'],
+    },
+  ] as const
 
-    // Ambience (3)
-    {
-      slug: 'busy-city-street',
-      title: 'Busy City Street',
-      description: 'Urban ambience with traffic, distant conversations, and city life. Seamless loop-ready recording for background atmosphere.',
-      categorySlug: 'ambience',
-      accessLevel: 'FREE' as const,
-      price: 0,
-      durationMs: 62000,
-      fileSize: 10500000,
-      format: 'wav',
-      tags: ['crowd', 'ambient', 'loop', 'long'],
-      subcategory: 'Urban',
-    },
-    {
-      slug: 'rainy-night-cafe',
-      title: 'Rainy Night Café',
-      description: 'Cozy café ambience with gentle rain on windows, distant chatter, and soft clinking of cups. Perfect for lo-fi projects.',
-      categorySlug: 'ambience',
-      accessLevel: 'PRO' as const,
-      price: 0,
-      durationMs: 120000,
-      fileSize: 20400000,
-      format: 'wav',
-      tags: ['rain', 'ambient', 'soft', 'loop'],
-      subcategory: 'Indoor',
-    },
-    {
-      slug: 'spaceship-interior-hum',
-      title: 'Spaceship Interior Hum',
-      description: 'Deep low-frequency spaceship engine room ambience with subtle electronic beeps. Great for sci-fi games and films.',
-      categorySlug: 'ambience',
-      accessLevel: 'PURCHASE' as const,
-      price: 25000,
-      durationMs: 90000,
-      fileSize: 15300000,
-      format: 'wav',
-      tags: ['sci-fi', 'electronic', 'loop', 'dark'],
-      subcategory: 'Sci-Fi',
-    },
-
-    // Soundscape (3)
-    {
-      slug: 'tropical-forest-morning',
-      title: 'Tropical Forest Morning',
-      description: 'Immersive tropical rainforest soundscape with birds singing, insects, and gentle breeze through the canopy.',
-      categorySlug: 'soundscape',
-      accessLevel: 'FREE' as const,
-      price: 0,
-      durationMs: 180000,
-      fileSize: 30600000,
-      format: 'wav',
-      tags: ['nature', 'bird', 'forest', 'ambient'],
-      subcategory: 'Nature',
-    },
-    {
-      slug: 'ocean-waves-sunset',
-      title: 'Ocean Waves at Sunset',
-      description: 'Calming ocean waves crashing on a sandy beach with distant seagulls. Binaural recording for relaxation and meditation.',
-      categorySlug: 'soundscape',
-      accessLevel: 'PRO' as const,
-      price: 0,
-      durationMs: 240000,
-      fileSize: 40800000,
-      format: 'wav',
-      tags: ['ocean', 'nature', 'soft', 'loop'],
-      subcategory: 'Beach',
-    },
-    {
-      slug: 'thunderstorm-wilderness',
-      title: 'Thunderstorm in the Wilderness',
-      description: 'Powerful thunderstorm with rolling thunder, heavy rain, and occasional lightning cracks. Dense atmospheric soundscape.',
-      categorySlug: 'soundscape',
-      accessLevel: 'PURCHASE' as const,
-      price: 35000,
-      durationMs: 300000,
-      fileSize: 51000000,
-      format: 'wav',
-      tags: ['thunder', 'rain', 'nature', 'loud'],
-      subcategory: 'Weather',
-    },
-  ]
+  const accessCycle = ['FREE', 'PRO', 'PURCHASE', 'FREE', 'PRO'] as const
+  const sfxAssets = sfxCatalog.flatMap((category) =>
+    category.titles.map((title, index) => {
+      const slugTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      const accessLevel = accessCycle[index]
+      return {
+        slug: `sfx-${category.categorySlug}-${slugTitle}`,
+        title,
+        description: `Demo SFX for ${category.categorySlug.replace(/-/g, ' ')}: ${title}. Useful for testing browse, detail, recommendation, and similar sound flows.`,
+        categorySlug: category.categorySlug,
+        accessLevel,
+        price: accessLevel === 'PURCHASE' ? 15000 + index * 5000 : 0,
+        durationMs: 2500 + index * 7200 + category.categorySlug.length * 120,
+        fileSize: 450000 + index * 260000 + category.categorySlug.length * 11000,
+        format: index % 2 === 0 ? 'wav' : 'mp3',
+        tags: category.tags.slice(index, index + 4).length >= 3 ? category.tags.slice(index, index + 4) : category.tags.slice(0, 4),
+        subcategory: category.subcategories[index],
+        mood: category.mood,
+      }
+    }),
+  )
 
   for (const sfx of sfxAssets) {
     const existing = await prisma.audioAsset.findUnique({ where: { slug: sfx.slug } })
@@ -310,6 +322,7 @@ async function main() {
         format: sfx.format,
         price: sfx.price,
         accessLevel: sfx.accessLevel,
+        mood: sfx.mood,
         licenseType: sfx.accessLevel === 'PRO' ? 'commercial' : 'personal',
         isPublished: true,
         publishedAt: new Date(),
@@ -337,6 +350,12 @@ async function main() {
     console.log(`  ✓ SFX "${sfx.title}" [${sfx.accessLevel}]`)
   }
   console.log('✓ SFX assets seeded')
+
+  if (process.env.SEED_MUSIC_DATA !== 'true') {
+    console.log('Dummy music dilewati. Set SEED_MUSIC_DATA=true untuk data demo music.')
+    console.log('\n✅ Seed complete!')
+    return
+  }
 
   // ── Music Assets ──────────────────────────────────────────
   const musicAssets = [
